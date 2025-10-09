@@ -1,0 +1,26 @@
+# flyctl launch added from simple-shuttle-booking-system-main\.gitignore
+# Logs
+simple-shuttle-booking-system-main\**\logs
+simple-shuttle-booking-system-main\**\*.log
+simple-shuttle-booking-system-main\**\npm-debug.log*
+simple-shuttle-booking-system-main\**\yarn-debug.log*
+simple-shuttle-booking-system-main\**\yarn-error.log*
+simple-shuttle-booking-system-main\**\pnpm-debug.log*
+simple-shuttle-booking-system-main\**\lerna-debug.log*
+
+simple-shuttle-booking-system-main\**\node_modules
+simple-shuttle-booking-system-main\**\dist
+simple-shuttle-booking-system-main\**\dist-ssr
+simple-shuttle-booking-system-main\**\*.local
+
+# Editor directories and files
+simple-shuttle-booking-system-main\**\.vscode\*
+!simple-shuttle-booking-system-main\**\.vscode\extensions.json
+simple-shuttle-booking-system-main\**\.idea
+simple-shuttle-booking-system-main\**\.DS_Store
+simple-shuttle-booking-system-main\**\*.suo
+simple-shuttle-booking-system-main\**\*.ntvs*
+simple-shuttle-booking-system-main\**\*.njsproj
+simple-shuttle-booking-system-main\**\*.sln
+simple-shuttle-booking-system-main\**\*.sw?
+fly.toml
