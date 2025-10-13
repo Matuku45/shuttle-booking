@@ -80,7 +80,7 @@ const AllBookings = () => {
                       onClick={() => deleteBooking(b.id)}
                       className="bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-500 shadow-md transition"
                     >
-                      ❌ Delete
+                    ❌ Delete
                     </button>
                   </td>
                 </tr>

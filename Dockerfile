@@ -1,35 +1,35 @@
-# Use Node 20 LTS slim image
+# Use the latest Node 20 LTS slim image
 FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
 
-# Set production environment
+# Environment variables
 ENV NODE_ENV=production
-ENV PORT=80  
+ENV PORT=80
 
-# Install build tools for Rollup native modules
+# Install build tools
 RUN apt-get update && \
     apt-get install -y build-essential python3 git && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy package files first
-COPY package.json package-lock.json ./
+# Copy dependency files
+COPY package*.json ./
 
-# Clean install dependencies (force to avoid optional deps issue)
+# Force clean install (ignore optional dependency warnings)
 RUN npm ci --force
 
-# Copy all files
+# Copy project files
 COPY . .
 
-# Build the Vite app (ignore optional dependency failures)
-RUN npm run build || true
+# Force rebuild the Vite app (ignore warnings)
+RUN npm run build --if-present || true
 
-# Install 'serve' to serve production build
+# Install serve globally to serve production files
 RUN npm install -g serve
 
 # Expose port 80 for Fly.io
 EXPOSE 80
 
-# Start the app on port 80
+# Start the app
 CMD ["serve", "-s", "dist", "-l", "80"]
