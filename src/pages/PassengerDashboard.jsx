@@ -30,6 +30,15 @@ const PassengerDashboard = () => {
     { id: 2, route: "Airport → City Center", date: "2025-10-09", time: "14:00", price: 50, selectedCar: "" },
   ];
 
+  const coordinatesList = [
+    [-34.0, 18.5],
+    [-33.9, 18.8],
+    [-29.9, 31.0],
+    [-26.2, 28.0],
+    [-25.7, 28.2],
+  ];
+
+  // Load user, cars, and bookings from localStorage
   useEffect(() => {
     setCars(defaultCars);
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -38,6 +47,7 @@ const PassengerDashboard = () => {
     setBookings(storedBookings);
   }, []);
 
+  // Fetch shuttles from backend
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
@@ -45,8 +55,7 @@ const PassengerDashboard = () => {
         if (!res.ok) throw new Error("Failed to fetch shuttles");
         const data = await res.json();
         const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
-        if (shuttlesData.length === 0) setShuttles(defaultShuttles);
-        else setShuttles(shuttlesData.map((s) => ({ ...s, selectedCar: "" })));
+        setShuttles(shuttlesData.length ? shuttlesData.map((s) => ({ ...s, selectedCar: "" })) : defaultShuttles);
       } catch (err) {
         console.warn("API error, using default shuttles:", err.message);
         setShuttles(defaultShuttles);
@@ -55,6 +64,7 @@ const PassengerDashboard = () => {
     fetchShuttles();
   }, []);
 
+  // Countdown timer
   useEffect(() => {
     const interval = setInterval(() => {
       const newCountdowns = {};
@@ -85,7 +95,6 @@ const PassengerDashboard = () => {
     setSeatsSelection((prev) => ({ ...prev, [shuttleId]: Number(seats) }));
   };
 
-  // Save payment to backend
   const savePayment = async (shuttle, seats) => {
     try {
       const paymentData = {
@@ -123,6 +132,7 @@ const PassengerDashboard = () => {
 
   return (
     <div className="flex h-screen w-screen bg-gray-100 text-black">
+      {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl">
         <div className="flex items-center justify-center h-20 border-b border-gray-700">
           <div className="text-2xl font-bold tracking-wide text-red-400">MetroShuttle</div>
@@ -163,6 +173,7 @@ const PassengerDashboard = () => {
         </nav>
       </aside>
 
+      {/* Main Content */}
       <main className="flex flex-col flex-grow overflow-auto p-6 space-y-6">
         {activeTab === "book" && (
           <section className="bg-white rounded-lg shadow p-6">
@@ -173,6 +184,45 @@ const PassengerDashboard = () => {
                 <p className="text-sm text-gray-600">{shuttle.date} • {shuttle.time}</p>
                 <p className="text-sm text-gray-500">Countdown: {countdowns[shuttle.id]}</p>
 
+                {/* Initial Coordinates */}
+                <label className="block text-sm font-medium mb-1 mt-2">Initial Coordinates:</label>
+                <select
+                  value={shuttle.initialCoord || ""}
+                  onChange={(e) =>
+                    setShuttles((prev) =>
+                      prev.map((s) =>
+                        s.id === shuttle.id ? { ...s, initialCoord: e.target.value } : s
+                      )
+                    )
+                  }
+                  className="border border-gray-300 rounded-md p-2 w-full"
+                >
+                  <option value="">-- Select Initial Coordinates --</option>
+                  {coordinatesList.map((coord, idx) => (
+                    <option key={idx} value={JSON.stringify(coord)}>{JSON.stringify(coord)}</option>
+                  ))}
+                </select>
+
+                {/* Final Coordinates */}
+                <label className="block text-sm font-medium mb-1 mt-2">Final Coordinates:</label>
+                <select
+                  value={shuttle.finalCoord || ""}
+                  onChange={(e) =>
+                    setShuttles((prev) =>
+                      prev.map((s) =>
+                        s.id === shuttle.id ? { ...s, finalCoord: e.target.value } : s
+                      )
+                    )
+                  }
+                  className="border border-gray-300 rounded-md p-2 w-full"
+                >
+                  <option value="">-- Select Final Coordinates --</option>
+                  {coordinatesList.map((coord, idx) => (
+                    <option key={idx} value={JSON.stringify(coord)}>{JSON.stringify(coord)}</option>
+                  ))}
+                </select>
+
+                {/* Car selection */}
                 <label className="block text-sm font-medium mb-1 mt-2">Select a Car:</label>
                 <select
                   value={shuttle.selectedCar || ""}
@@ -187,6 +237,7 @@ const PassengerDashboard = () => {
                   ))}
                 </select>
 
+                {/* Seats input */}
                 <label className="block text-sm font-medium mb-1 mt-2">Seats:</label>
                 <input
                   type="number"
@@ -197,10 +248,15 @@ const PassengerDashboard = () => {
                   className="border border-gray-300 rounded-md p-2 w-full"
                 />
 
+                {/* Payment button */}
                 <Payment
                   shuttle={shuttle}
                   seats={seatsSelection[shuttle.id] || 1}
                   onPaymentSuccess={(shuttle, seats) => {
+                    if (!shuttle.initialCoord || !shuttle.finalCoord) {
+                      return alert("Please select both initial and final coordinates.");
+                    }
+
                     const car = cars.find((c) => c.name === shuttle.selectedCar);
                     if (!car) return alert("Please select a valid car.");
 
@@ -221,13 +277,14 @@ const PassengerDashboard = () => {
                       seats,
                       car,
                       price: shuttle.price * seats,
+                      initialCoord: JSON.parse(shuttle.initialCoord),
+                      finalCoord: JSON.parse(shuttle.finalCoord),
                     };
 
                     const updatedBookings = [...bookings, newBooking];
                     setBookings(updatedBookings);
                     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
 
-                    // Save to backend
                     savePayment(shuttle, seats);
                   }}
                 />
