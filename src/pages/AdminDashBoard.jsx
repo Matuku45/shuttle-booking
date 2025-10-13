@@ -20,7 +20,7 @@ const AdminDashboard = () => {
     role: "Admin",
   });
 
-  // Fetch shuttles on mount
+  // Fetch shuttles
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
     fetchShuttles();
   }, []);
 
-  // Fetch payments on mount
+  // Fetch payments
   useEffect(() => {
     const fetchPayments = async () => {
       try {
@@ -51,13 +51,11 @@ const AdminDashboard = () => {
     fetchPayments();
   }, []);
 
-  // Handle new shuttle added
   const handleShuttleAdded = (newShuttle) => {
     setShuttles((prev) => [...prev, newShuttle]);
     setShowAddModal(false);
   };
 
-  // Render active tab content
   const renderTab = () => {
     switch (activeTab) {
       case "dashboard":
@@ -79,12 +77,18 @@ const AdminDashboard = () => {
             >
               ➕ Add New Shuttle
             </button>
+
+            {/* Modal for Add Shuttle */}
             {showAddModal && (
-              <AddShuttle
-                title="Add Shuttle"
-                onClose={() => setShowAddModal(false)}
-                onSubmit={handleShuttleAdded}
-              />
+              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+                <div className="bg-white rounded-2xl shadow-lg max-w-md w-full overflow-y-auto max-h-[90vh] p-6">
+                  <AddShuttle
+                    title="Add Shuttle"
+                    onClose={() => setShowAddModal(false)}
+                    onSubmit={handleShuttleAdded}
+                  />
+                </div>
+              </div>
             )}
           </div>
         );
@@ -100,7 +104,7 @@ const AdminDashboard = () => {
 
       case "payments":
         return (
-          <section className="bg-white p-6 rounded-lg shadow">
+          <section className="bg-white p-6 rounded-lg shadow overflow-x-auto">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">💳 Paid Payments</h2>
             {payments.length === 0 ? (
               <p className="text-gray-600">No paid payments found.</p>
@@ -123,9 +127,7 @@ const AdminDashboard = () => {
                         <td className="p-2 border">{p.booking_id}</td>
                         <td className="p-2 border font-bold text-green-700">{p.amount}</td>
                         <td className="p-2 border">{p.status}</td>
-                        <td className="p-2 border">
-                          {new Date(p.payment_date).toLocaleDateString()}
-                        </td>
+                        <td className="p-2 border">{new Date(p.payment_date).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -141,9 +143,9 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
+    <div className="flex flex-col md:flex-row h-screen w-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col shadow-lg">
+      <aside className="w-full md:w-64 bg-gray-900 text-white flex flex-col shadow-lg flex-shrink-0">
         <div className="flex flex-col items-center justify-center h-24 border-b border-gray-700">
           <div className="w-14 h-14 rounded-full bg-yellow-400 flex items-center justify-center text-lg font-bold text-black shadow">
             {user.username[0].toUpperCase()}
@@ -152,7 +154,7 @@ const AdminDashboard = () => {
           <p className="text-gray-400 text-sm">{user.role}</p>
         </div>
 
-        <nav className="flex-1 p-4 space-y-3">
+        <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
           {[
             { key: "dashboard", label: "🏠 Dashboard" },
             { key: "add-shuttle", label: "🚌 Add Shuttle" },
@@ -175,19 +177,21 @@ const AdminDashboard = () => {
           ))}
           <a
             href="/login"
-            className="block text-center bg-red-600 hover:bg-red-700 py-2 rounded-lg font-bold mt-10"
+            className="block text-center bg-red-600 hover:bg-red-700 py-2 rounded-lg font-bold mt-6"
           >
             🚪 Logout
           </a>
         </nav>
 
-        <footer className="text-center p-4 border-t border-gray-700 text-sm text-gray-400">
+        <footer className="text-center p-4 border-t border-gray-700 text-sm text-gray-400 hidden md:block">
           © {new Date().getFullYear()} MetroShuttle Admin
         </footer>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-6">{loading ? <p>Loading...</p> : renderTab()}</main>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        {loading ? <p className="text-center mt-10">Loading...</p> : renderTab()}
+      </main>
     </div>
   );
 };
