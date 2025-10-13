@@ -1,220 +1,200 @@
 import React, { useState, useEffect } from "react";
-import Benz from "../components/gallery/benz.webp";
-import Hybdai from "../components/gallery/hyndaifamilycar.webp";
-import Polo from "../components/gallery/polo.webp";
 
-const AdminAllCars = () => {
-  const [cars, setCars] = useState([
-    { id: 1, name: "Mercedes Benz", numberPlate: "CB 456 123", seats: 6, route: "", image: Benz },
-    { id: 2, name: "Hyundai Family Car", numberPlate: "CB 789 321", seats: 8, route: "", image: Hybdai },
-    { id: 3, name: "VW Polo", numberPlate: "CB 123 987", seats: 4, route: "", image: Polo },
-  ]);
+const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
-  const [shuttleRoutes, setShuttleRoutes] = useState([]);
-  const [loadingRoutes, setLoadingRoutes] = useState(true);
-
-  const [newCar, setNewCar] = useState({
-    name: "",
-    numberPlate: "",
-    seats: 1,
+const AllShuttles = () => {
+  const [shuttles, setShuttles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingShuttle, setEditingShuttle] = useState(null);
+  const [formData, setFormData] = useState({
     route: "",
-    image: null,
+    date: "",
+    time: "",
+    duration: "",
+    seats: 1,
+    price: 100,
   });
 
-  const [editingCarId, setEditingCarId] = useState(null);
-  const [editingCarData, setEditingCarData] = useState({});
+  // Fetch all shuttles
+  const fetchShuttles = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/shuttles`);
+      const data = await res.json();
+      if (data.success) setShuttles(data.shuttles);
+      else setError(data.message || "Failed to fetch shuttles");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Fetch routes from backend
   useEffect(() => {
-    const fetchShuttles = async () => {
-      try {
-        const res = await fetch("https://shuttle-booking-system.fly.dev/api/shuttles");
-        if (!res.ok) throw new Error("Failed to fetch shuttles");
-        const data = await res.json();
-        // Extract unique routes
-        const routes = Array.isArray(data) ? [...new Set(data.map((s) => s.route).filter(Boolean))] : [];
-        setShuttleRoutes(routes);
-      } catch (err) {
-        console.error("Error fetching shuttle routes:", err);
-        setShuttleRoutes([]);
-      } finally {
-        setLoadingRoutes(false);
-      }
-    };
-
     fetchShuttles();
   }, []);
 
-  const handleAddCar = () => {
-    if (!newCar.name || !newCar.numberPlate || !newCar.image || !newCar.route) {
-      alert("Please fill all fields, upload an image, and select a route!");
-      return;
+  // Handle create/update
+  const handleSave = async () => {
+    try {
+      const url = editingShuttle
+        ? `${BASE_URL}/api/shuttles/${editingShuttle.id}`
+        : `${BASE_URL}/api/shuttles/add`;
+      const method = editingShuttle ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      setFormData({ route: "", date: "", time: "", duration: "", seats: 1, price: 100 });
+      setEditingShuttle(null);
+      fetchShuttles();
+    } catch (err) {
+      setError(err.message);
     }
-
-    setCars([...cars, { ...newCar, id: Date.now() }]);
-    setNewCar({ name: "", numberPlate: "", seats: 1, route: "", image: null });
   };
 
-  const handleDeleteCar = (id) => {
-    setCars(cars.filter((c) => c.id !== id));
-  };
-
-  const startEditing = (car) => {
-    setEditingCarId(car.id);
-    setEditingCarData({ ...car });
-  };
-
-  const saveEdit = (id) => {
-    if (!editingCarData.name || !editingCarData.numberPlate || !editingCarData.route) {
-      alert("Please fill all fields and select a route!");
-      return;
+  // Handle delete
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this shuttle?")) return;
+    try {
+      const res = await fetch(`${BASE_URL}/api/shuttles/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      fetchShuttles();
+    } catch (err) {
+      setError(err.message);
     }
-    setCars(cars.map((c) => (c.id === id ? editingCarData : c)));
-    setEditingCarId(null);
   };
 
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">🚗 Manage Department Cars</h1>
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-5xl mx-auto bg-white shadow-2xl rounded-3xl p-8 border border-gray-300">
+        <h2 className="text-3xl font-extrabold text-blue-900 mb-8 text-center">
+          🚐 All Shuttles
+        </h2>
 
-      {/* Add New Car Section */}
-      <div className="w-full max-w-4xl mb-10 bg-white shadow-xl rounded-3xl p-6 border border-gray-200">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">➕ Add New Car</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
+
+        {/* Shuttle Form */}
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
           <input
             type="text"
-            placeholder="Car Name"
-            value={newCar.name}
-            onChange={(e) => setNewCar({ ...newCar, name: e.target.value })}
-            className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-yellow-400"
+            placeholder="Route"
+            value={formData.route}
+            onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
           />
           <input
-            type="text"
-            placeholder="Number Plate"
-            value={newCar.numberPlate}
-            onChange={(e) => setNewCar({ ...newCar, numberPlate: e.target.value })}
-            className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-yellow-400"
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="time"
+            value={formData.time}
+            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
           />
           <input
             type="number"
-            min="1"
-            placeholder="Seats"
-            value={newCar.seats}
-            onChange={(e) => setNewCar({ ...newCar, seats: Number(e.target.value) })}
-            className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-yellow-400"
+            placeholder="Duration"
+            value={formData.duration}
+            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
           />
-
-          {/* Route select */}
-          {loadingRoutes ? (
-            <p className="text-gray-500 py-2">Loading routes...</p>
-          ) : (
-            <select
-              value={newCar.route}
-              onChange={(e) => setNewCar({ ...newCar, route: e.target.value })}
-              className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-yellow-400"
-            >
-              <option value="">Select Shuttle Route</option>
-              {shuttleRoutes.map((route, index) => (
-                <option key={index} value={route}>
-                  {route}
-                </option>
-              ))}
-            </select>
-          )}
-
           <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) setNewCar({ ...newCar, image: URL.createObjectURL(file) });
-            }}
-            className="border px-3 py-2 rounded-lg"
+            type="number"
+            placeholder="Seats"
+            min="1"
+            value={formData.seats}
+            onChange={(e) => setFormData({ ...formData, seats: Number(e.target.value) })}
+            className="border px-3 py-2 rounded-lg w-full"
           />
-
+          <input
+            type="number"
+            placeholder="Price"
+            min="0"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+        </div>
+        <div className="flex justify-end mb-6">
           <button
-            onClick={handleAddCar}
-            className="bg-yellow-400 text-black font-bold px-6 py-2 rounded-lg hover:bg-yellow-500 transition col-span-1 md:col-span-2"
+            onClick={handleSave}
+            className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500"
           >
-            Add Car
+            {editingShuttle ? "Update Shuttle" : "Add Shuttle"}
           </button>
         </div>
-      </div>
 
-      {/* Cars List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-6xl">
-        {cars.map((car) => (
-          <div key={car.id} className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-2xl transition-transform transform hover:scale-105">
-            <img src={car.image} alt={car.name} className="w-full h-52 object-cover rounded-xl mb-4 shadow-md" />
-
-            {editingCarId === car.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editingCarData.name}
-                  onChange={(e) => setEditingCarData({ ...editingCarData, name: e.target.value })}
-                  className="border px-3 py-2 rounded-lg mb-2 w-full text-center"
-                />
-                <input
-                  type="text"
-                  value={editingCarData.numberPlate}
-                  onChange={(e) => setEditingCarData({ ...editingCarData, numberPlate: e.target.value })}
-                  className="border px-3 py-2 rounded-lg mb-2 w-full text-center"
-                />
-                <input
-                  type="number"
-                  min="1"
-                  value={editingCarData.seats}
-                  onChange={(e) => setEditingCarData({ ...editingCarData, seats: Number(e.target.value) })}
-                  className="border px-3 py-2 rounded-lg mb-2 w-full text-center"
-                />
-                <select
-                  value={editingCarData.route}
-                  onChange={(e) => setEditingCarData({ ...editingCarData, route: e.target.value })}
-                  className="border px-3 py-2 rounded-lg mb-2 w-full"
-                >
-                  <option value="">Select Shuttle Route</option>
-                  {shuttleRoutes.map((route, index) => (
-                    <option key={index} value={route}>
-                      {route}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => saveEdit(car.id)}
-                  className="bg-green-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-green-600 w-full"
-                >
-                  💾 Save
-                </button>
-              </>
-            ) : (
-              <>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">{car.name}</h2>
-                <p className="text-gray-600 mb-1">Number Plate: {car.numberPlate}</p>
-                <p className="text-gray-600 font-medium mb-1">Seats: {car.seats}</p>
-                <p className="text-gray-600 font-medium mb-4">Route: {car.route || "-"}</p>
-
-                <div className="flex gap-2">
+        {/* Shuttle List */}
+        {loading ? (
+          <p className="text-center text-gray-700">Loading...</p>
+        ) : shuttles.length === 0 ? (
+          <p className="text-center text-gray-700">No shuttles available.</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {shuttles.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all"
+              >
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{s.route}</h3>
+                <p className="text-gray-700 mb-1">
+                  📅 <strong>Date:</strong> {s.date}
+                </p>
+                <p className="text-gray-700 mb-1">
+                  ⏰ <strong>Time:</strong> {s.time}
+                </p>
+                <p className="text-gray-700 mb-1">
+                  ⏳ <strong>Duration:</strong> {s.duration} hours
+                </p>
+                <p className="text-gray-700 mb-1">
+                  💺 <strong>Seats:</strong> {s.seats}
+                </p>
+                <p className="text-gray-900 font-extrabold mt-2">
+                  💰 <strong>Price:</strong> R{s.price}
+                </p>
+                <div className="flex gap-3 mt-4">
                   <button
-                    onClick={() => startEditing(car)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+                    onClick={() => {
+                      setEditingShuttle(s);
+                      setFormData({
+                        route: s.route,
+                        date: s.date,
+                        time: s.time,
+                        duration: s.duration,
+                        seats: s.seats,
+                        price: s.price,
+                      });
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
                   >
                     ✏️ Edit
                   </button>
                   <button
-                    onClick={() => handleDeleteCar(car.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                    onClick={() => handleDelete(s.id)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500"
                   >
-                    🗑️ Delete
+                    ❌ Delete
                   </button>
                 </div>
-              </>
-            )}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
 };
 
-export default AdminAllCars;
+export default AllShuttles;

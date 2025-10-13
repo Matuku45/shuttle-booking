@@ -26,23 +26,26 @@ export default function AddShuttle({ onClose, onSubmit }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Helper: Convert empty fields to null, pickup always null
+  // Helper: sanitize payload and add default pickup
   const sanitizePayload = (data) => {
     const payload = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value === "" || value === undefined) {
-        payload[key] = null;
-      } else if (key === "seats" || key === "price" || key === "duration") {
+      if (value === "" || value === undefined) payload[key] = null;
+      else if (key === "seats" || key === "price" || key === "duration")
         payload[key] = Number(value);
-      } else {
-        payload[key] = value;
-      }
+      else payload[key] = value;
     }
-    payload.pickup = null; // Always null since pickup point removed
+    // Set pickup default
+    payload.pickup = "Pick up";
     return payload;
   };
 
   const handleAdd = async () => {
+    if (!shuttleData.route) {
+      setError("Please select a route.");
+      return;
+    }
+
     const payload = sanitizePayload(shuttleData);
     setLoading(true);
     setError("");
@@ -86,7 +89,7 @@ export default function AddShuttle({ onClose, onSubmit }) {
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Route selection dropdown */}
+          {/* Route dropdown */}
           <select
             value={shuttleData.route}
             onChange={(e) =>
@@ -95,8 +98,8 @@ export default function AddShuttle({ onClose, onSubmit }) {
             className="border px-3 py-2 rounded-lg w-full"
           >
             <option value="">Select Route</option>
-            {ROUTE_OPTIONS.map((route, index) => (
-              <option key={index} value={route}>
+            {ROUTE_OPTIONS.map((route, idx) => (
+              <option key={idx} value={route}>
                 {route}
               </option>
             ))}
@@ -136,10 +139,7 @@ export default function AddShuttle({ onClose, onSubmit }) {
             placeholder="Seats"
             value={shuttleData.seats}
             onChange={(e) =>
-              setShuttleData({
-                ...shuttleData,
-                seats: Number(e.target.value),
-              })
+              setShuttleData({ ...shuttleData, seats: Number(e.target.value) })
             }
             className="border px-3 py-2 rounded-lg w-full"
           />
@@ -150,10 +150,7 @@ export default function AddShuttle({ onClose, onSubmit }) {
             placeholder="Price"
             value={shuttleData.price}
             onChange={(e) =>
-              setShuttleData({
-                ...shuttleData,
-                price: Number(e.target.value),
-              })
+              setShuttleData({ ...shuttleData, price: Number(e.target.value) })
             }
             className="border px-3 py-2 rounded-lg w-full"
           />

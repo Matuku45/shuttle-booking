@@ -1,172 +1,193 @@
 import React, { useState, useEffect } from "react";
 
-// Car options
-const carsList = [
-  { name: "Benz", numberPlate: "CA 123 456", registrationNumber: "REG-001", seats: 4 },
-  { name: "Honda Family Car", numberPlate: "CB 789 321", registrationNumber: "REG-002", seats: 6 },
-  { name: "Polo", numberPlate: "CC 654 987", registrationNumber: "REG-003", seats: 5 },
-];
+const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
-const Bookings = () => {
-  const [bookings, setBookings] = useState([]);
-  const [userName, setUserName] = useState("Passenger");
-  const [editingSeat, setEditingSeat] = useState(null);
-  const [editingCar, setEditingCar] = useState(null);
+const AllShuttles = () => {
+  const [shuttles, setShuttles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingShuttle, setEditingShuttle] = useState(null);
+  const [formData, setFormData] = useState({
+    route: "",
+    date: "",
+    time: "",
+    duration: "",
+    seats: 1,
+    price: 100,
+  });
+
+  // Fetch all shuttles
+  const fetchShuttles = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/shuttles`);
+      const data = await res.json();
+      if (data.success) setShuttles(data.shuttles);
+      else setError(data.message || "Failed to fetch shuttles");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.name) setUserName(user.name);
-
-    const saved = JSON.parse(localStorage.getItem("bookings")) || [];
-    const updated = saved.map((b) => ({
-      ...b,
-      passengerName: b.passengerName || user?.name || "Passenger",
-      seatNumber: b.seatNumber || 1,
-    }));
-
-    const filtered = updated.filter((b) => b.passengerName === (user?.name || "Passenger"));
-    setBookings(filtered);
+    fetchShuttles();
   }, []);
 
-  const saveBookings = (updated) => {
-    setBookings(updated);
-    localStorage.setItem("bookings", JSON.stringify(updated));
+  // Handle create/update
+  const handleSave = async () => {
+    try {
+      const url = editingShuttle
+        ? `${BASE_URL}/api/shuttles/${editingShuttle.id}`
+        : `${BASE_URL}/api/shuttles/add`;
+      const method = editingShuttle ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      setFormData({ route: "", date: "", time: "", duration: "", seats: 1, price: 100 });
+      setEditingShuttle(null);
+      fetchShuttles();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleSeatsChange = (bookingId, newSeats) => {
-    const updated = bookings.map((b) =>
-      b.id === bookingId
-        ? { ...b, seats: Number(newSeats), price: (b.price / b.seats) * Number(newSeats) }
-        : b
-    );
-    saveBookings(updated);
-  };
-
-  const handleCarChange = (bookingId, newCarName) => {
-    const newCar = carsList.find((c) => c.name === newCarName);
-    const updated = bookings.map((b) =>
-      b.id === bookingId ? { ...b, car: newCar } : b
-    );
-    saveBookings(updated);
-  };
-
-  const handleDeleteBooking = (bookingId) => {
-    const updated = bookings.filter((b) => b.id !== bookingId);
-    saveBookings(updated);
+  // Handle delete
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this shuttle?")) return;
+    try {
+      const res = await fetch(`${BASE_URL}/api/shuttles/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      fetchShuttles();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-gray-100 py-10 px-4">
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
       <div className="max-w-5xl mx-auto bg-white shadow-2xl rounded-3xl p-8 border border-gray-300">
-        <h2 className="text-3xl font-extrabold text-blue-900 mb-10 text-center tracking-wide drop-shadow-sm">
-          🚐 {userName}'s Shuttle Bookings
+        <h2 className="text-3xl font-extrabold text-blue-900 mb-8 text-center">
+          🚐 All Shuttles
         </h2>
 
-        {bookings.length === 0 ? (
-          <p className="text-gray-700 text-center font-semibold text-lg">
-            No bookings found for {userName}.
-          </p>
+        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
+
+        {/* Shuttle Form */}
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Route"
+            value={formData.route}
+            onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="time"
+            value={formData.time}
+            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="number"
+            placeholder="Duration"
+            value={formData.duration}
+            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="number"
+            placeholder="Seats"
+            min="1"
+            value={formData.seats}
+            onChange={(e) => setFormData({ ...formData, seats: Number(e.target.value) })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+          <input
+            type="number"
+            placeholder="Price"
+            min="0"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+            className="border px-3 py-2 rounded-lg w-full"
+          />
+        </div>
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={handleSave}
+            className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500"
+          >
+            {editingShuttle ? "Update Shuttle" : "Add Shuttle"}
+          </button>
+        </div>
+
+        {/* Shuttle List */}
+        {loading ? (
+          <p className="text-center text-gray-700">Loading...</p>
+        ) : shuttles.length === 0 ? (
+          <p className="text-center text-gray-700">No shuttles available.</p>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8">
-            {bookings.map((b) => (
+          <div className="grid md:grid-cols-2 gap-6">
+            {shuttles.map((s) => (
               <div
-                key={b.id}
-                className="bg-gradient-to-br from-white to-blue-50 border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all"
+                key={s.id}
+                className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all"
               >
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {b.route}
-                </h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{s.route}</h3>
                 <p className="text-gray-700 mb-1">
-                  📅 <strong>Date:</strong> {b.date}
+                  📅 <strong>Date:</strong> {s.date}
                 </p>
                 <p className="text-gray-700 mb-1">
-                  ⏰ <strong>Time:</strong> {b.time}
+                  ⏰ <strong>Time:</strong> {s.time}
                 </p>
                 <p className="text-gray-700 mb-1">
-                  🚗 <strong>Car:</strong> {b.car.name} ({b.car.numberPlate})
+                  ⏳ <strong>Duration:</strong> {s.duration} hours
                 </p>
                 <p className="text-gray-700 mb-1">
-                  💺 <strong>Seats:</strong> {b.seats}
+                  💺 <strong>Seats:</strong> {s.seats}
                 </p>
-                <p className="text-gray-700 mb-1">
-                  🔢 <strong>Seat No:</strong> {b.seatNumber}
+                <p className="text-gray-900 font-extrabold mt-2">
+                  💰 <strong>Price:</strong> R{s.price}
                 </p>
-                <p className="text-gray-900 font-extrabold mt-3">
-                  💰 <strong>Price:</strong> R{b.price}
-                </p>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex flex-wrap gap-3 mt-5">
+                <div className="flex gap-3 mt-4">
                   <button
-                    onClick={() => setEditingSeat(b.id)}
-                    className="bg-blue-600 text-white font-extrabold text-sm px-5 py-2 rounded-lg hover:bg-blue-500 shadow-md hover:scale-105 transition-transform"
+                    onClick={() => {
+                      setEditingShuttle(s);
+                      setFormData({
+                        route: s.route,
+                        date: s.date,
+                        time: s.time,
+                        duration: s.duration,
+                        seats: s.seats,
+                        price: s.price,
+                      });
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
                   >
-                    ✏️ Edit Seats
+                    ✏️ Edit
                   </button>
-
                   <button
-                    onClick={() => setEditingCar(b.id)}
-                    className="bg-green-600 text-white font-extrabold text-sm px-5 py-2 rounded-lg hover:bg-green-500 shadow-md hover:scale-105 transition-transform"
-                  >
-                    🚗 Change Car
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteBooking(b.id)}
-                    className="bg-red-600 text-white font-extrabold text-sm px-5 py-2 rounded-lg hover:bg-red-500 shadow-md hover:scale-105 transition-transform"
+                    onClick={() => handleDelete(s.id)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500"
                   >
                     ❌ Delete
                   </button>
                 </div>
-
-                {/* EDIT SEATS SECTION */}
-                {editingSeat === b.id && (
-                  <div className="mt-5 bg-white border border-blue-300 rounded-lg p-4 shadow-inner">
-                    <h4 className="text-center font-bold text-blue-800 mb-3">
-                      ✏️ Edit Seats
-                    </h4>
-                    <input
-                      type="number"
-                      min="1"
-                      max={b.car.seats}
-                      value={b.seats}
-                      onChange={(e) => handleSeatsChange(b.id, e.target.value)}
-                      className="border border-gray-400 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 text-center font-semibold text-gray-900"
-                    />
-                    <button
-                      onClick={() => setEditingSeat(null)}
-                      className="mt-3 bg-blue-700 text-white font-extrabold px-4 py-2 rounded-lg hover:bg-blue-600 w-full transition shadow-lg"
-                    >
-                      ✅ Save
-                    </button>
-                  </div>
-                )}
-
-                {/* CHANGE CAR SECTION */}
-                {editingCar === b.id && (
-                  <div className="mt-5 bg-white border border-green-300 rounded-lg p-4 shadow-inner">
-                    <h4 className="text-center font-bold text-green-800 mb-3">
-                      🚗 Change Car
-                    </h4>
-                    <select
-                      value={b.car.name}
-                      onChange={(e) => handleCarChange(b.id, e.target.value)}
-                      className="border border-gray-400 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-green-400 font-semibold text-gray-900"
-                    >
-                      {carsList.map((c) => (
-                        <option key={c.registrationNumber} value={c.name}>
-                          {c.name} ({c.numberPlate})
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => setEditingCar(null)}
-                      className="mt-3 bg-green-700 text-white font-extrabold px-4 py-2 rounded-lg hover:bg-green-600 w-full transition shadow-lg"
-                    >
-                      ✅ Save
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -176,4 +197,4 @@ const Bookings = () => {
   );
 };
 
-export default Bookings;
+export default AllShuttles;
