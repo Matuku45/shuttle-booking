@@ -1,200 +1,159 @@
 import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
-const BASE_URL = "https://shuttle-booking-system.fly.dev";
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
-const AllShuttles = () => {
-  const [shuttles, setShuttles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [editingShuttle, setEditingShuttle] = useState(null);
-  const [formData, setFormData] = useState({
-    route: "",
-    date: "",
-    time: "",
-    duration: "",
-    seats: 1,
-    price: 100,
-  });
+// Dummy bookings
+const dummyBookings = [
+  {
+    id: 1,
+    passengerName: "Thabiso Mapoulo",
+    phone: "+27 82 555 1234",
+    from: "Cape Town",
+    to: "Stellenbosch",
+    date: "2025-10-15",
+    seats: 2,
+    price: 150,
+    car: "Mercedes Benz",
+  },
+  {
+    id: 2,
+    passengerName: "Naledi Mokoena",
+    phone: "+27 82 999 4321",
+    from: "Johannesburg",
+    to: "Pretoria",
+    date: "2025-10-16",
+    seats: 4,
+    price: 300,
+    car: "Hyundai Family Car",
+  },
+];
 
-  // Fetch all shuttles
-  const fetchShuttles = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/api/shuttles`);
-      const data = await res.json();
-      if (data.success) setShuttles(data.shuttles);
-      else setError(data.message || "Failed to fetch shuttles");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+const AllBookings = () => {
+  const [bookings, setBookings] = useState(dummyBookings);
+  const [bookingsWithCoords, setBookingsWithCoords] = useState([]);
 
+  // Fetch coordinates for each booking
   useEffect(() => {
-    fetchShuttles();
-  }, []);
-
-  // Handle create/update
-  const handleSave = async () => {
-    try {
-      const url = editingShuttle
-        ? `${BASE_URL}/api/shuttles/${editingShuttle.id}`
-        : `${BASE_URL}/api/shuttles/add`;
-      const method = editingShuttle ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
+    const fetchCoords = async (place) => {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`
+      );
       const data = await res.json();
-      if (!data.success) throw new Error(data.message);
+      if (data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      return null;
+    };
 
-      setFormData({ route: "", date: "", time: "", duration: "", seats: 1, price: 100 });
-      setEditingShuttle(null);
-      fetchShuttles();
-    } catch (err) {
-      setError(err.message);
-    }
+    const loadBookingsCoords = async () => {
+      const updated = await Promise.all(
+        bookings.map(async (b) => {
+          const fromCoords = await fetchCoords(b.from);
+          const toCoords = await fetchCoords(b.to);
+          return { ...b, path: fromCoords && toCoords ? [fromCoords, toCoords] : [] };
+        })
+      );
+      setBookingsWithCoords(updated);
+    };
+
+    loadBookingsCoords();
+  }, [bookings]);
+
+  const deleteBooking = (id) => {
+    setBookingsWithCoords((prev) => prev.filter((b) => b.id !== id));
   };
 
-  // Handle delete
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this shuttle?")) return;
-    try {
-      const res = await fetch(`${BASE_URL}/api/shuttles/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-      fetchShuttles();
-    } catch (err) {
-      setError(err.message);
-    }
+  const BookingMap = ({ path, from, to }) => {
+    if (!path || path.length < 2) return <span>Loading map...</span>;
+
+    return (
+      <MapContainer
+        center={path[0]}
+        zoom={8}
+        style={{ width: "100%", height: "200px", borderRadius: "12px", marginTop: "8px" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+        />
+        {path.map((coord, idx) => (
+          <Marker key={idx} position={coord}>
+            <Popup>{idx === 0 ? `From: ${from}` : `To: ${to}`}</Popup>
+          </Marker>
+        ))}
+        <Polyline positions={path} color="blue" />
+      </MapContainer>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4">
-      <div className="max-w-5xl mx-auto bg-white shadow-2xl rounded-3xl p-8 border border-gray-300">
-        <h2 className="text-3xl font-extrabold text-blue-900 mb-8 text-center">
-          🚐 All Shuttles
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-gray-100 py-10 px-4">
+      <div className="max-w-7xl mx-auto bg-white shadow-2xl rounded-3xl p-6 border border-gray-300">
+        <h2 className="text-3xl font-bold mb-6 text-center text-blue-900 drop-shadow-sm">
+          📋 All Bookings
         </h2>
 
-        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
-
-        {/* Shuttle Form */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Route"
-            value={formData.route}
-            onChange={(e) => setFormData({ ...formData, route: e.target.value })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-          <input
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-          <input
-            type="time"
-            value={formData.time}
-            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-          <input
-            type="number"
-            placeholder="Duration"
-            value={formData.duration}
-            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-          <input
-            type="number"
-            placeholder="Seats"
-            min="1"
-            value={formData.seats}
-            onChange={(e) => setFormData({ ...formData, seats: Number(e.target.value) })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-          <input
-            type="number"
-            placeholder="Price"
-            min="0"
-            value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-            className="border px-3 py-2 rounded-lg w-full"
-          />
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse border border-gray-300 shadow-lg rounded-xl overflow-hidden">
+            <thead className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black">
+              <tr>
+                <th className="p-3 border text-center">Passenger</th>
+                <th className="p-3 border text-center">Phone</th>
+                <th className="p-3 border text-center">Route</th>
+                <th className="p-3 border text-center">Date</th>
+                <th className="p-3 border text-center">Seats</th>
+                <th className="p-3 border text-center">Price (R)</th>
+                <th className="p-3 border text-center">Car</th>
+                <th className="p-3 border text-center">Map</th>
+                <th className="p-3 border text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              {bookingsWithCoords.map((b) => (
+                <tr key={b.id} className="even:bg-gray-50">
+                  <td className="p-3 border text-center">{b.passengerName}</td>
+                  <td className="p-3 border text-center">{b.phone}</td>
+                  <td className="p-3 border text-center">
+                    {b.from} → {b.to}
+                  </td>
+                  <td className="p-3 border text-center">{b.date}</td>
+                  <td className="p-3 border text-center">{b.seats}</td>
+                  <td className="p-3 border text-center font-bold text-green-700">{b.price}</td>
+                  <td className="p-3 border text-center">{b.car}</td>
+                  <td className="p-3 border">
+                    <BookingMap path={b.path} from={b.from} to={b.to} />
+                  </td>
+                  <td className="p-3 border text-center">
+                    <button
+                      onClick={() => deleteBooking(b.id)}
+                      className="bg-red-600 text-white font-semibold px-3 py-1 rounded-lg hover:bg-red-500 shadow-md transition text-sm"
+                    >
+                      ❌ Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {bookingsWithCoords.length === 0 && (
+                <tr>
+                  <td colSpan="9" className="text-center p-4 text-gray-500 font-semibold">
+                    No bookings found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-        <div className="flex justify-end mb-6">
-          <button
-            onClick={handleSave}
-            className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500"
-          >
-            {editingShuttle ? "Update Shuttle" : "Add Shuttle"}
-          </button>
-        </div>
-
-        {/* Shuttle List */}
-        {loading ? (
-          <p className="text-center text-gray-700">Loading...</p>
-        ) : shuttles.length === 0 ? (
-          <p className="text-center text-gray-700">No shuttles available.</p>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {shuttles.map((s) => (
-              <div
-                key={s.id}
-                className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all"
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{s.route}</h3>
-                <p className="text-gray-700 mb-1">
-                  📅 <strong>Date:</strong> {s.date}
-                </p>
-                <p className="text-gray-700 mb-1">
-                  ⏰ <strong>Time:</strong> {s.time}
-                </p>
-                <p className="text-gray-700 mb-1">
-                  ⏳ <strong>Duration:</strong> {s.duration} hours
-                </p>
-                <p className="text-gray-700 mb-1">
-                  💺 <strong>Seats:</strong> {s.seats}
-                </p>
-                <p className="text-gray-900 font-extrabold mt-2">
-                  💰 <strong>Price:</strong> R{s.price}
-                </p>
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() => {
-                      setEditingShuttle(s);
-                      setFormData({
-                        route: s.route,
-                        date: s.date,
-                        time: s.time,
-                        duration: s.duration,
-                        seats: s.seats,
-                        price: s.price,
-                      });
-                    }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(s.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500"
-                  >
-                    ❌ Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-export default AllShuttles;
+export default AllBookings;

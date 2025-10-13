@@ -5,18 +5,15 @@ const STRIPE_TEST_URL = "https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00";
 
 const Payment = ({ shuttle, seats, onPaymentSuccess }) => {
   const handleBook = () => {
-    if (!shuttle.selectedCar) return alert("Please select a car before payment.");
-
-    // Open Stripe prebuilt test URL directly
+    // Open Stripe test payment page
     const paymentWindow = window.open(STRIPE_TEST_URL, "_blank");
 
-    // Optional: detect when the Stripe tab is closed
+    // Check every second if user closed the tab
     const paymentCheck = setInterval(() => {
       if (paymentWindow.closed) {
         clearInterval(paymentCheck);
-        // Trigger booking success (no backend verification needed for test)
+        // Trigger success callback
         onPaymentSuccess(shuttle, seats);
-        alert("Payment window closed. Booking marked as complete!");
       }
     }, 1000);
   };

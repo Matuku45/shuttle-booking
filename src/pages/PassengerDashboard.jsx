@@ -1,53 +1,58 @@
 import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import TrackPayment from "./track-payment";
 import Bookings from "./bookings";
 import Payment from "../components/payment";
-import Benz from "../components/gallery/benz.webp";
-import Hybdai from "../components/gallery/hyndaifamilycar.webp";
-import Polo from "../components/gallery/polo.webp";
 import Terms from "./Terms";
 
+// Fix default Leaflet marker icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
+const DEFAULT_CAR = { name: "MetroShuttle Bus", seats: 10 };
 
 const PassengerDashboard = () => {
-  const [user, setUser] = useState({ name: "Passenger", email: "" });
+  const [user, setUser] = useState({ name: "Passenger", email: "", phone: "" });
   const [shuttles, setShuttles] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [cars, setCars] = useState([]);
   const [activeTab, setActiveTab] = useState("book");
   const [seatsSelection, setSeatsSelection] = useState({});
   const [countdowns, setCountdowns] = useState({});
-  const [bookingSuccess, setBookingSuccess] = useState("");
-
-  const defaultCars = [
-    { name: "Benz", numberPlate: "CA 123 456", registrationNumber: "REG-001", seats: 4, image: Benz },
-    { name: "Honda Family Car", numberPlate: "CB 789 321", registrationNumber: "REG-002", seats: 6, image: Hybdai },
-    { name: "Polo", numberPlate: "CC 654 987", registrationNumber: "REG-003", seats: 5, image: Polo },
-  ];
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
 
   const defaultShuttles = [
-    { id: 1, route: "City Center → Airport", date: "2025-10-09", time: "10:00", price: 50, selectedCar: "" },
-    { id: 2, route: "Airport → City Center", date: "2025-10-09", time: "14:00", price: 50, selectedCar: "" },
+    {
+      id: 1,
+      route: "Pretoria → Cape Town",
+      date: "2025-10-05",
+      time: "22:36",
+      price: 100,
+      car: DEFAULT_CAR,
+      path: [
+        { lat: -25.7479, lng: 28.2293 },
+        { lat: -33.9249, lng: 18.4241 },
+      ],
+    },
   ];
 
-  const coordinatesList = [
-    [-34.0, 18.5],
-    [-33.9, 18.8],
-    [-29.9, 31.0],
-    [-26.2, 28.0],
-    [-25.7, 28.2],
-  ];
-
-  // Load user, cars, and bookings from localStorage
+  // Load user and bookings
   useEffect(() => {
-    setCars(defaultCars);
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser?.name) setUser(storedUser);
     const storedBookings = JSON.parse(localStorage.getItem("bookings")) || [];
     setBookings(storedBookings);
   }, []);
 
-  // Fetch shuttles from backend
+  // Fetch shuttles
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
@@ -55,7 +60,15 @@ const PassengerDashboard = () => {
         if (!res.ok) throw new Error("Failed to fetch shuttles");
         const data = await res.json();
         const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
-        setShuttles(shuttlesData.length ? shuttlesData.map((s) => ({ ...s, selectedCar: "" })) : defaultShuttles);
+        setShuttles(
+          shuttlesData.length
+            ? shuttlesData.map((s) => ({
+                ...s,
+                car: DEFAULT_CAR,
+                path: s.path || [],
+              }))
+            : defaultShuttles
+        );
       } catch (err) {
         console.warn("API error, using default shuttles:", err.message);
         setShuttles(defaultShuttles);
@@ -64,7 +77,7 @@ const PassengerDashboard = () => {
     fetchShuttles();
   }, []);
 
-  // Countdown timer
+  // Countdown timers
   useEffect(() => {
     const interval = setInterval(() => {
       const newCountdowns = {};
@@ -85,12 +98,6 @@ const PassengerDashboard = () => {
     return () => clearInterval(interval);
   }, [shuttles]);
 
-  const handleCarSelect = (shuttleId, carName) => {
-    setShuttles((prev) =>
-      prev.map((s) => (s.id === shuttleId ? { ...s, selectedCar: carName } : s))
-    );
-  };
-
   const handleSeatChange = (shuttleId, seats) => {
     setSeatsSelection((prev) => ({ ...prev, [shuttleId]: Number(seats) }));
   };
@@ -99,14 +106,15 @@ const PassengerDashboard = () => {
     try {
       const paymentData = {
         passenger_name: user.name,
+        passenger_phone: user.phone || "",
         shuttle_id: Number(shuttle.id),
         booking_id: Math.floor(Math.random() * 1000000),
-        car_name: shuttle.selectedCar || "",
         seats,
         amount: Math.round(shuttle.price * seats),
         status: "Paid",
         payment_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
+        car: DEFAULT_CAR.name,
       };
 
       const res = await fetch(`${BASE_URL}/api/payments/create`, {
@@ -115,25 +123,67 @@ const PassengerDashboard = () => {
         body: JSON.stringify(paymentData),
       });
 
-      const data = await res.json();
-      if (data.success || res.ok) {
-        setBookingSuccess(
-          `Booking confirmed for ${seats} seat(s) on ${shuttle.route} (${shuttle.time}, ${shuttle.date}) with ${shuttle.selectedCar}.`
+      await res.json();
+    } catch (err) {
+      console.error("Payment save error:", err.message);
+    }
+  };
+
+  // Request user location dynamically
+  const requestUserLocation = async () => {
+    return new Promise((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const loc = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setUserLocation(loc);
+            resolve(loc);
+          },
+          (err) => {
+            console.warn("Geolocation failed:", err.message);
+            resolve(null);
+          }
         );
       } else {
-        console.error("Failed to save payment:", data);
-        alert("Payment save failed: " + (data.message || "Unknown error"));
+        console.warn("Geolocation not supported.");
+        resolve(null);
       }
-    } catch (err) {
-      console.error("Payment save error", err);
-      alert("Payment save error: " + err.message);
-    }
+    });
+  };
+
+  const ShuttleMap = ({ path, route }) => {
+    if (!path || path.length === 0) return null;
+    const center = userLocation || path[0];
+    return (
+      <MapContainer
+        center={center}
+        zoom={6}
+        style={{ width: "100%", height: "300px", borderRadius: "12px" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {userLocation && <Marker position={userLocation}><Popup>You are here</Popup></Marker>}
+        {path.map((coord, idx) => (
+          <Marker key={idx} position={coord}><Popup>{route}</Popup></Marker>
+        ))}
+        <Polyline positions={path} color="red" />
+      </MapContainer>
+    );
   };
 
   return (
     <div className="flex h-screen w-screen bg-gray-100 text-black">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl">
+      <aside
+        className={`bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl ${
+          sidebarOpen ? "fixed z-50 top-0 left-0 h-full w-64" : "hidden md:flex md:w-64"
+        } transition-all`}
+      >
         <div className="flex items-center justify-center h-20 border-b border-gray-700">
           <div className="text-2xl font-bold tracking-wide text-red-400">MetroShuttle</div>
         </div>
@@ -143,12 +193,11 @@ const PassengerDashboard = () => {
           </div>
           <div className="text-white font-bold text-lg">{user.name}</div>
           <div className="text-gray-300 text-sm">{user.email}</div>
+          <div className="text-gray-300 text-sm">{user.phone}</div>
         </div>
-
         <nav className="flex flex-col flex-grow p-4 space-y-3">
           {[
             { label: "🚍 Book Shuttles", tab: "book" },
-            { label: "🚗 View All Cars", tab: "cars" },
             { label: "💺 View My Bookings", tab: "bookings" },
             { label: "👤 View My Profile", tab: "profile" },
             { label: "💳 Track Payments", tab: "payments" },
@@ -156,7 +205,7 @@ const PassengerDashboard = () => {
           ].map((item) => (
             <button
               key={item.tab}
-              onClick={() => setActiveTab(item.tab)}
+              onClick={() => { setActiveTab(item.tab); setSidebarOpen(false); }}
               className={`py-2 px-3 rounded-md font-semibold text-left transition ${
                 activeTab === item.tab ? "bg-red-600 text-white" : "text-gray-200 hover:bg-gray-800"
               }`}
@@ -174,100 +223,44 @@ const PassengerDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex flex-col flex-grow overflow-auto p-6 space-y-6">
+      <main className="flex flex-col flex-grow overflow-auto p-4 md:p-6 space-y-6">
         {activeTab === "book" && (
-          <section className="bg-white rounded-lg shadow p-6">
+          <section className="bg-white rounded-lg shadow p-4 md:p-6 space-y-4">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Shuttles</h2>
+
             {shuttles.map((shuttle) => (
-              <div key={shuttle.id} className="border border-gray-200 rounded-md p-4 mb-4">
+              <div key={shuttle.id} className="border border-gray-200 rounded-md p-4 space-y-2">
                 <div className="text-blue-700 font-semibold text-lg">{shuttle.route}</div>
                 <p className="text-sm text-gray-600">{shuttle.date} • {shuttle.time}</p>
                 <p className="text-sm text-gray-500">Countdown: {countdowns[shuttle.id]}</p>
+                <p className="text-sm text-gray-500">Car: {DEFAULT_CAR.name}</p>
 
-                {/* Initial Coordinates */}
-                <label className="block text-sm font-medium mb-1 mt-2">Initial Coordinates:</label>
-                <select
-                  value={shuttle.initialCoord || ""}
-                  onChange={(e) =>
-                    setShuttles((prev) =>
-                      prev.map((s) =>
-                        s.id === shuttle.id ? { ...s, initialCoord: e.target.value } : s
-                      )
-                    )
-                  }
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                >
-                  <option value="">-- Select Initial Coordinates --</option>
-                  {coordinatesList.map((coord, idx) => (
-                    <option key={idx} value={JSON.stringify(coord)}>{JSON.stringify(coord)}</option>
-                  ))}
-                </select>
+                <ShuttleMap path={shuttle.path} route={shuttle.route} />
 
-                {/* Final Coordinates */}
-                <label className="block text-sm font-medium mb-1 mt-2">Final Coordinates:</label>
-                <select
-                  value={shuttle.finalCoord || ""}
-                  onChange={(e) =>
-                    setShuttles((prev) =>
-                      prev.map((s) =>
-                        s.id === shuttle.id ? { ...s, finalCoord: e.target.value } : s
-                      )
-                    )
-                  }
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                >
-                  <option value="">-- Select Final Coordinates --</option>
-                  {coordinatesList.map((coord, idx) => (
-                    <option key={idx} value={JSON.stringify(coord)}>{JSON.stringify(coord)}</option>
-                  ))}
-                </select>
-
-                {/* Car selection */}
-                <label className="block text-sm font-medium mb-1 mt-2">Select a Car:</label>
-                <select
-                  value={shuttle.selectedCar || ""}
-                  onChange={(e) => handleCarSelect(shuttle.id, e.target.value)}
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                >
-                  <option value="">-- Choose a Car --</option>
-                  {cars.map((car) => (
-                    <option key={car.registrationNumber} value={car.name}>
-                      {`${car.name} (${car.numberPlate}) - ${car.seats} seats`}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Seats input */}
                 <label className="block text-sm font-medium mb-1 mt-2">Seats:</label>
                 <input
                   type="number"
                   min="1"
-                  max="10"
+                  max={DEFAULT_CAR.seats}
                   value={seatsSelection[shuttle.id] || 1}
                   onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
                   className="border border-gray-300 rounded-md p-2 w-full"
                 />
 
-                {/* Payment button */}
+                <label className="block text-sm font-medium mb-1 mt-2">Phone Number:</label>
+                <input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={user.phone}
+                  onChange={(e) => setUser({ ...user, phone: e.target.value })}
+                  className="border border-gray-300 rounded-md p-2 w-full"
+                />
+
                 <Payment
                   shuttle={shuttle}
                   seats={seatsSelection[shuttle.id] || 1}
-                  onPaymentSuccess={(shuttle, seats) => {
-                    if (!shuttle.initialCoord || !shuttle.finalCoord) {
-                      return alert("Please select both initial and final coordinates.");
-                    }
-
-                    const car = cars.find((c) => c.name === shuttle.selectedCar);
-                    if (!car) return alert("Please select a valid car.");
-
-                    const totalBookedSeats = bookings
-                      .filter((b) => b.car.name === car.name && b.shuttle_id === shuttle.id)
-                      .reduce((acc, b) => acc + b.seats, 0);
-
-                    if (seats + totalBookedSeats > car.seats) {
-                      return alert(`Not enough seats available in ${car.name}.`);
-                    }
-
+                  onPaymentSuccess={async (shuttle, seats) => {
+                    await requestUserLocation(); // dynamically get location
                     const newBooking = {
                       id: Math.floor(Math.random() * 1000000),
                       shuttle_id: shuttle.id,
@@ -275,38 +268,19 @@ const PassengerDashboard = () => {
                       date: shuttle.date,
                       time: shuttle.time,
                       seats,
-                      car,
                       price: shuttle.price * seats,
-                      initialCoord: JSON.parse(shuttle.initialCoord),
-                      finalCoord: JSON.parse(shuttle.finalCoord),
+                      path: shuttle.path,
+                      car: DEFAULT_CAR.name,
+                      passenger_phone: user.phone || "",
                     };
-
                     const updatedBookings = [...bookings, newBooking];
                     setBookings(updatedBookings);
                     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-
                     savePayment(shuttle, seats);
                   }}
                 />
               </div>
             ))}
-          </section>
-        )}
-
-        {activeTab === "cars" && (
-          <section className="p-8 rounded-lg shadow-lg bg-gradient-to-r from-red-100 via-white to-gray-200">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">🚗 Department Cars</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {cars.map((car) => (
-                <div key={car.registrationNumber} className="bg-white rounded-2xl shadow-md p-4">
-                  <img src={car.image} alt={car.name} className="w-full h-40 object-cover rounded-xl mb-3" />
-                  <h3 className="text-xl font-semibold">{car.name}</h3>
-                  <p>Number Plate: {car.numberPlate}</p>
-                  <p>Registration: {car.registrationNumber}</p>
-                  <p>Seats: {car.seats}</p>
-                </div>
-              ))}
-            </div>
           </section>
         )}
 
@@ -318,6 +292,7 @@ const PassengerDashboard = () => {
             <h2 className="text-2xl font-bold mb-4">👤 My Profile</h2>
             <p>Name: {user.name}</p>
             <p>Email: {user.email || "Not provided"}</p>
+            <p>Phone: {user.phone || "Not provided"}</p>
           </section>
         )}
       </main>
