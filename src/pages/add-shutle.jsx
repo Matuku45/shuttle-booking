@@ -2,13 +2,23 @@ import React, { useState } from "react";
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
+// Dummy route list (South African cities)
+const ROUTE_OPTIONS = [
+  "Pretoria → Cape Town",
+  "Johannesburg → Durban",
+  "Polokwane → Bloemfontein",
+  "Cape Town → Port Elizabeth",
+  "Durban → East London",
+  "Nelspruit → Pretoria",
+  "Kimberley → Johannesburg",
+];
+
 export default function AddShuttle({ onClose, onSubmit }) {
   const [shuttleData, setShuttleData] = useState({
     route: "",
     date: "",
     time: "",
     duration: "",
-    pickup: "",
     seats: 1,
     price: 100,
   });
@@ -16,7 +26,7 @@ export default function AddShuttle({ onClose, onSubmit }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Helper: convert empty fields to null
+  // Helper: Convert empty fields to null, pickup always null
   const sanitizePayload = (data) => {
     const payload = {};
     for (const [key, value] of Object.entries(data)) {
@@ -28,6 +38,7 @@ export default function AddShuttle({ onClose, onSubmit }) {
         payload[key] = value;
       }
     }
+    payload.pickup = null; // Always null since pickup point removed
     return payload;
   };
 
@@ -55,7 +66,6 @@ export default function AddShuttle({ onClose, onSubmit }) {
         date: "",
         time: "",
         duration: "",
-        pickup: "",
         seats: 1,
         price: 100,
       });
@@ -70,19 +80,27 @@ export default function AddShuttle({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-start pt-20 z-50">
       <div className="bg-white p-6 rounded-2xl w-full max-w-2xl shadow-lg">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">➕ Add New Shuttle</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+          ➕ Add New Shuttle
+        </h2>
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Route (e.g., Pretoria → Cape Town)"
+          {/* Route selection dropdown */}
+          <select
             value={shuttleData.route}
             onChange={(e) =>
               setShuttleData({ ...shuttleData, route: e.target.value })
             }
             className="border px-3 py-2 rounded-lg w-full"
-          />
+          >
+            <option value="">Select Route</option>
+            {ROUTE_OPTIONS.map((route, index) => (
+              <option key={index} value={route}>
+                {route}
+              </option>
+            ))}
+          </select>
 
           <input
             type="date"
@@ -108,16 +126,6 @@ export default function AddShuttle({ onClose, onSubmit }) {
             value={shuttleData.duration}
             onChange={(e) =>
               setShuttleData({ ...shuttleData, duration: e.target.value })
-            }
-            className="border px-3 py-2 rounded-lg w-full"
-          />
-
-          <input
-            type="text"
-            placeholder="Pickup point (optional)"
-            value={shuttleData.pickup}
-            onChange={(e) =>
-              setShuttleData({ ...shuttleData, pickup: e.target.value })
             }
             className="border px-3 py-2 rounded-lg w-full"
           />
