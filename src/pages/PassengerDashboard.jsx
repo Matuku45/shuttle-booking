@@ -10,8 +10,7 @@ import Terms from "./Terms";
 // Fix default Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
@@ -44,7 +43,6 @@ const PassengerDashboard = () => {
     },
   ];
 
-  // Load user and bookings
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser?.name) setUser(storedUser);
@@ -52,7 +50,6 @@ const PassengerDashboard = () => {
     setBookings(storedBookings);
   }, []);
 
-  // Fetch shuttles
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
@@ -73,7 +70,6 @@ const PassengerDashboard = () => {
     fetchShuttles();
   }, []);
 
-  // Countdown timers
   useEffect(() => {
     const interval = setInterval(() => {
       const newCountdowns = {};
@@ -113,13 +109,11 @@ const PassengerDashboard = () => {
         car: DEFAULT_CAR.name,
       };
 
-      const res = await fetch(`${BASE_URL}/api/payments/create`, {
+      await fetch(`${BASE_URL}/api/payments/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(paymentData),
       });
-
-      await res.json();
     } catch (err) {
       console.error("Payment save error:", err.message);
     }
@@ -130,22 +124,13 @@ const PassengerDashboard = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const loc = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
+            const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
             setUserLocation(loc);
             resolve(loc);
           },
-          (err) => {
-            console.warn("Geolocation failed:", err.message);
-            resolve(null);
-          }
+          () => resolve(null)
         );
-      } else {
-        console.warn("Geolocation not supported.");
-        resolve(null);
-      }
+      } else resolve(null);
     });
   };
 
@@ -156,7 +141,8 @@ const PassengerDashboard = () => {
       <MapContainer
         center={center}
         zoom={6}
-        style={{ width: "100%", height: "300px", borderRadius: "12px" }}
+        style={{ width: "100%", height: "250px", borderRadius: "12px", marginTop: "10px" }}
+        className="shadow-md"
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -171,156 +157,157 @@ const PassengerDashboard = () => {
     );
   };
 
-const handleBooking = async (shuttle) => {
-  const seats = seatsSelection[shuttle.id] || 1;
-  if (!user.phone.trim()) return alert("Enter your phone number!");
-  if (!user.email.trim()) return alert("User email not found!");
+  const handleBooking = async (shuttle) => {
+    const seats = seatsSelection[shuttle.id] || 1;
+    if (!user.phone.trim()) return alert("Enter your phone number!");
+    if (!user.email.trim()) return alert("User email not found!");
 
-  await requestUserLocation();
+    await requestUserLocation();
 
-  // Save booking to local storage
-  const newBooking = {
-    id: Math.floor(Math.random() * 1000000),
-    shuttle_id: shuttle.id,
-    passengerName: user.name,   // ✅ Add passenger name
-    email: user.email,           // ✅ Add user email
-    phone: user.phone,           // ✅ Add user phone
-    route: shuttle.route,
-    date: shuttle.date,
-    time: shuttle.time,
-    seats,
-    price: shuttle.price * seats,
-    path: shuttle.path,
-    car: DEFAULT_CAR.name,
+    const newBooking = {
+      id: Math.floor(Math.random() * 1000000),
+      shuttle_id: shuttle.id,
+      passengerName: user.name,
+      email: user.email,
+      phone: user.phone,
+      route: shuttle.route,
+      date: shuttle.date,
+      time: shuttle.time,
+      seats,
+      price: shuttle.price * seats,
+      path: shuttle.path,
+      car: DEFAULT_CAR.name,
+    };
+
+    const updatedBookings = [...bookings, newBooking];
+    setBookings(updatedBookings);
+    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    localStorage.setItem("user", JSON.stringify(user));
+
+    await savePayment(shuttle, seats);
+
+    window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
+    alert("Booking saved! Redirecting to payment...");
   };
 
-  // Update bookings state
-  const updatedBookings = [...bookings, newBooking];
-  setBookings(updatedBookings);
-
-  // Save updated bookings and user to localStorage
-  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-  localStorage.setItem("user", JSON.stringify(user));
-
-  // Process payment
-  await savePayment(shuttle, seats);
-
-  // Open Stripe payment page
-  window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
-
-  alert("Booking saved! Redirecting to payment...");
-};
-
-
   return (
-    <div className="flex h-screen w-screen bg-gray-100 text-black">
-      {/* Sidebar */}
-      <aside
-        className={`bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl ${
-          sidebarOpen ? "fixed z-50 top-0 left-0 h-full w-64" : "hidden md:flex md:w-64"
-        } transition-all`}
+  <div className="flex h-screen w-screen bg-gray-100 text-black">
+  {/* Sidebar */}
+  <aside className={`bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl fixed md:relative z-50 md:z-auto md:flex md:w-64 h-full transition-transform transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+    <div className="flex items-center justify-between h-20 border-b border-gray-700 px-4 md:px-0">
+      <div className="text-2xl font-bold tracking-wide text-red-400">MetroShuttle</div>
+      {/* Hamburger for small screens */}
+      <button
+        className="md:hidden text-white text-2xl"
+        onClick={() => setSidebarOpen(false)}
       >
-        <div className="flex items-center justify-center h-20 border-b border-gray-700">
-          <div className="text-2xl font-bold tracking-wide text-red-400">MetroShuttle</div>
-        </div>
-        <div className="flex flex-col items-center justify-center p-4 border-b border-gray-700">
-          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center text-xl font-bold text-white mb-2 shadow-md">
-            {user.name ? user.name[0].toUpperCase() : "P"}
-          </div>
-          <div className="text-white font-bold text-lg">{user.name}</div>
-          <div className="text-gray-300 text-sm">{user.email}</div>
-          <div className="text-gray-300 text-sm">{user.phone}</div>
-        </div>
-        <nav className="flex flex-col flex-grow p-4 space-y-3">
-          {[
-            { label: "🚍 Book Shuttles", tab: "book" },
-            { label: "💺 View My Bookings", tab: "bookings" },
-            { label: "👤 View My Profile", tab: "profile" },
-            { label: "💳 Track Payments", tab: "payments" },
-            { label: "📜 Terms & Conditions", tab: "terms" },
-          ].map((item) => (
-            <button
-              key={item.tab}
-              onClick={() => { setActiveTab(item.tab); setSidebarOpen(false); }}
-              className={`py-2 px-3 rounded-md font-semibold text-left transition ${
-                activeTab === item.tab ? "bg-red-600 text-white" : "text-gray-200 hover:bg-gray-800"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-<button
-  onClick={() => {
-    alert("Logged out successfully!");
-    window.location.href = "/login"; // Redirect to login page
-  }}
-  className="py-2 px-3 rounded-md font-semibold text-left text-gray-200 hover:bg-red-800 transition"
->
-  🚪 Logout
-</button>
-
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex flex-col flex-grow overflow-auto p-4 md:p-6 space-y-6">
-        {activeTab === "book" && (
-          <section className="bg-white rounded-lg shadow p-4 md:p-6 space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Shuttles</h2>
-
-            {shuttles.map((shuttle) => (
-              <div key={shuttle.id} className="border border-gray-200 rounded-md p-4 space-y-2">
-                <div className="text-blue-700 font-semibold text-lg">{shuttle.route}</div>
-                <p className="text-sm text-gray-600">{shuttle.date} • {shuttle.time}</p>
-                <p className="text-sm text-gray-500">Countdown: {countdowns[shuttle.id]}</p>
-                <p className="text-sm text-gray-500">Car: {DEFAULT_CAR.name}</p>
-
-                <ShuttleMap path={shuttle.path} route={shuttle.route} />
-
-                <label className="block text-sm font-medium mb-1 mt-2">Seats:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={DEFAULT_CAR.seats}
-                  value={seatsSelection[shuttle.id] || 1}
-                  onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                />
-
-                <label className="block text-sm font-medium mb-1 mt-2">Phone Number:</label>
-                <input
-                  type="tel"
-                  placeholder="Enter phone number"
-                  value={user.phone}
-                  onChange={(e) => setUser({ ...user, phone: e.target.value })}
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                />
-
-         <button
-  onClick={() => handleBooking(shuttle)}
-  className="bg-red-600 text-white font-bold text-lg px-4 py-2 mt-3 rounded hover:bg-red-700 transition-transform transform hover:scale-105 shadow-sm"
->
-  Book 
-</button>
-
-              </div>
-            ))}
-          </section>
-        )}
-
-        {activeTab === "bookings" && <Bookings />}
-        {activeTab === "terms" && <Terms />}
-        {activeTab === "payments" && <TrackPayment passengerName={user.name} />}
-        {activeTab === "profile" && (
-          <section className="bg-white rounded-lg shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-4">👤 My Profile</h2>
-            <p>Name: {user.name}</p>
-            <p>Email: {user.email || "Not provided"}</p>
-            <p>Phone: {user.phone || "Not provided"}</p>
-          </section>
-        )}
-      </main>
+        &times;
+      </button>
     </div>
+
+    <div className="flex flex-col items-center justify-center p-4 border-b border-gray-700">
+      <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center text-xl font-bold text-white mb-2 shadow-md">
+        {user.name ? user.name[0].toUpperCase() : "P"}
+      </div>
+      <div className="text-white font-bold text-lg">{user.name}</div>
+      <div className="text-gray-300 text-sm">{user.email}</div>
+      <div className="text-gray-300 text-sm">{user.phone}</div>
+    </div>
+
+    <nav className="flex flex-col flex-grow p-4 space-y-3">
+      {[{ label: "🚍 Book Shuttles", tab: "book" }, { label: "💺 View My Bookings", tab: "bookings" }, { label: "👤 View My Profile", tab: "profile" }, { label: "💳 Track Payments", tab: "payments" }, { label: "📜 Terms & Conditions", tab: "terms" }].map((item) => (
+        <button
+          key={item.tab}
+          onClick={() => { setActiveTab(item.tab); setSidebarOpen(false); }}
+          className={`py-2 px-3 rounded-md font-semibold text-left transition ${activeTab === item.tab ? "bg-red-600 text-white" : "text-gray-200 hover:bg-gray-800"}`}
+        >
+          {item.label}
+        </button>
+      ))}
+      <button
+        onClick={() => { alert("Logged out successfully!"); window.location.href = "/login"; }}
+        className="py-2 px-3 rounded-md font-semibold text-left text-gray-200 hover:bg-red-800 transition"
+      >
+        🚪 Logout
+      </button>
+    </nav>
+  </aside>
+
+  {/* Overlay for small screens */}
+  {sidebarOpen && (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+      onClick={() => setSidebarOpen(false)}
+    />
+  )}
+
+  {/* Main Content */}
+  <main className="flex flex-col flex-grow overflow-auto p-4 md:p-6 space-y-6 w-full">
+    {/* Hamburger to open sidebar on small screens */}
+    <button
+      className="md:hidden bg-red-600 text-white px-4 py-2 rounded-lg font-bold mb-4 self-start"
+      onClick={() => setSidebarOpen(true)}
+    >
+      ☰ Menu
+    </button>
+
+    {activeTab === "book" && (
+      <section className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Shuttles</h2>
+
+        {shuttles.map((shuttle) => (
+          <div key={shuttle.id} className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 rounded-xl p-5 shadow-lg transform hover:scale-105 transition-all duration-500 text-white space-y-2">
+            <div className="text-xl font-bold">{shuttle.route}</div>
+            <p>{shuttle.date} • {shuttle.time}</p>
+            <p>Countdown: {countdowns[shuttle.id]}</p>
+            <p>Car: {DEFAULT_CAR.name}</p>
+
+            <ShuttleMap path={shuttle.path} route={shuttle.route} />
+
+            <label className="block mt-2 font-semibold">Seats:</label>
+            <input
+              type="number"
+              min="1"
+              max={DEFAULT_CAR.seats}
+              value={seatsSelection[shuttle.id] || 1}
+              onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
+              className="border border-gray-200 rounded-md p-2 w-full text-black"
+            />
+
+            <label className="block mt-2 font-semibold">Phone Number:</label>
+            <input
+              type="tel"
+              placeholder="Enter phone number"
+              value={user.phone}
+              onChange={(e) => setUser({ ...user, phone: e.target.value })}
+              className="border border-gray-200 rounded-md p-2 w-full text-black"
+            />
+
+            <button
+              onClick={() => handleBooking(shuttle)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-3 mt-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105"
+            >
+              Book & Pay
+            </button>
+          </div>
+        ))}
+      </section>
+    )}
+
+    {activeTab === "bookings" && <Bookings />}
+    {activeTab === "terms" && <Terms />}
+    {activeTab === "payments" && <TrackPayment passengerName={user.name} />}
+    {activeTab === "profile" && (
+      <section className="bg-white rounded-lg shadow-md p-8">
+        <h2 className="text-2xl font-bold mb-4">👤 My Profile</h2>
+        <p>Name: {user.name}</p>
+        <p>Email: {user.email || "Not provided"}</p>
+        <p>Phone: {user.phone || "Not provided"}</p>
+      </section>
+    )}
+  </main>
+</div>
+
   );
 };
 
