@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
-const DEFAULT_CAR = { name: "MetroShuttle Bus", seats: 10 };
+const DEFAULT_CAR = { name: "MetroShuttle Bus <c1234555666>", seats: 10 };
 
 const PassengerDashboard = () => {
   const [user, setUser] = useState({ name: "Passenger", email: "", phone: "" });
@@ -62,11 +62,7 @@ const PassengerDashboard = () => {
         const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
         setShuttles(
           shuttlesData.length
-            ? shuttlesData.map((s) => ({
-                ...s,
-                car: DEFAULT_CAR,
-                path: s.path || [],
-              }))
+            ? shuttlesData.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
             : defaultShuttles
         );
       } catch (err) {
@@ -107,10 +103,10 @@ const PassengerDashboard = () => {
       const paymentData = {
         passenger_name: user.name,
         passenger_phone: user.phone || "",
-        shuttle_id: Number(shuttle.id),
+        shuttle_id: shuttle.id,
         booking_id: Math.floor(Math.random() * 1000000),
         seats,
-        amount: Math.round(shuttle.price * seats),
+        amount: shuttle.price * seats,
         status: "Paid",
         payment_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -129,7 +125,6 @@ const PassengerDashboard = () => {
     }
   };
 
-  // Request user location dynamically
   const requestUserLocation = async () => {
     return new Promise((resolve) => {
       if (navigator.geolocation) {
@@ -176,6 +171,47 @@ const PassengerDashboard = () => {
     );
   };
 
+const handleBooking = async (shuttle) => {
+  const seats = seatsSelection[shuttle.id] || 1;
+  if (!user.phone.trim()) return alert("Enter your phone number!");
+  if (!user.email.trim()) return alert("User email not found!");
+
+  await requestUserLocation();
+
+  // Save booking to local storage
+  const newBooking = {
+    id: Math.floor(Math.random() * 1000000),
+    shuttle_id: shuttle.id,
+    passengerName: user.name,   // ✅ Add passenger name
+    email: user.email,           // ✅ Add user email
+    phone: user.phone,           // ✅ Add user phone
+    route: shuttle.route,
+    date: shuttle.date,
+    time: shuttle.time,
+    seats,
+    price: shuttle.price * seats,
+    path: shuttle.path,
+    car: DEFAULT_CAR.name,
+  };
+
+  // Update bookings state
+  const updatedBookings = [...bookings, newBooking];
+  setBookings(updatedBookings);
+
+  // Save updated bookings and user to localStorage
+  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+  localStorage.setItem("user", JSON.stringify(user));
+
+  // Process payment
+  await savePayment(shuttle, seats);
+
+  // Open Stripe payment page
+  window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
+
+  alert("Booking saved! Redirecting to payment...");
+};
+
+
   return (
     <div className="flex h-screen w-screen bg-gray-100 text-black">
       {/* Sidebar */}
@@ -213,12 +249,16 @@ const PassengerDashboard = () => {
               {item.label}
             </button>
           ))}
-          <button
-            onClick={() => alert("Logged out successfully!")}
-            className="py-2 px-3 rounded-md font-semibold text-left text-gray-200 hover:bg-red-800 transition"
-          >
-            🚪 Logout
-          </button>
+<button
+  onClick={() => {
+    alert("Logged out successfully!");
+    window.location.href = "/login"; // Redirect to login page
+  }}
+  className="py-2 px-3 rounded-md font-semibold text-left text-gray-200 hover:bg-red-800 transition"
+>
+  🚪 Logout
+</button>
+
         </nav>
       </aside>
 
@@ -256,29 +296,13 @@ const PassengerDashboard = () => {
                   className="border border-gray-300 rounded-md p-2 w-full"
                 />
 
-                <Payment
-                  shuttle={shuttle}
-                  seats={seatsSelection[shuttle.id] || 1}
-                  onPaymentSuccess={async (shuttle, seats) => {
-                    await requestUserLocation(); // dynamically get location
-                    const newBooking = {
-                      id: Math.floor(Math.random() * 1000000),
-                      shuttle_id: shuttle.id,
-                      route: shuttle.route,
-                      date: shuttle.date,
-                      time: shuttle.time,
-                      seats,
-                      price: shuttle.price * seats,
-                      path: shuttle.path,
-                      car: DEFAULT_CAR.name,
-                      passenger_phone: user.phone || "",
-                    };
-                    const updatedBookings = [...bookings, newBooking];
-                    setBookings(updatedBookings);
-                    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-                    savePayment(shuttle, seats);
-                  }}
-                />
+         <button
+  onClick={() => handleBooking(shuttle)}
+  className="bg-red-600 text-white font-bold text-lg px-4 py-2 mt-3 rounded hover:bg-red-700 transition-transform transform hover:scale-105 shadow-sm"
+>
+  Book 
+</button>
+
               </div>
             ))}
           </section>

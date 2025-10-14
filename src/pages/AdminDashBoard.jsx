@@ -1,8 +1,9 @@
+// src/pages/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 import AddShuttle from "./add-shutle";
-import AllShuttles from "./all-available-shutle";
 import AllCars from "./AllCars";
-import AllBookings from "./AllBookings";
+import AllBookings from "./AllBookings"; // ✅ Import AllBookings component
+import AllShuttles from "./all-available-shutle";
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
@@ -99,7 +100,7 @@ const AdminDashboard = () => {
       case "cars":
         return <AllCars />;
 
-      case "bookings":
+      case "bookings": // ✅ New tab for AllBookings
         return <AllBookings />;
 
       case "payments":
@@ -127,7 +128,9 @@ const AdminDashboard = () => {
                         <td className="p-2 border">{p.booking_id}</td>
                         <td className="p-2 border font-bold text-green-700">{p.amount}</td>
                         <td className="p-2 border">{p.status}</td>
-                        <td className="p-2 border">{new Date(p.payment_date).toLocaleDateString()}</td>
+                        <td className="p-2 border">
+                          {new Date(p.payment_date).toLocaleDateString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -160,7 +163,7 @@ const AdminDashboard = () => {
             { key: "add-shuttle", label: "🚌 Add Shuttle" },
             { key: "all-shuttles", label: "🛫 View All Shuttles" },
             { key: "cars", label: "🚗 View All Cars" },
-            { key: "bookings", label: "📋 View All Bookings" },
+            { key: "bookings", label: "📋 View All Bookings" }, // ✅ New button
             { key: "payments", label: "💳 Payments" },
           ].map((btn) => (
             <button
