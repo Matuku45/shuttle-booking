@@ -73,77 +73,78 @@ const handleEditPayment = (booking) => {
 };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
-      <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-center text-blue-900 drop-shadow-md">
-        📋 My Bookings
-      </h2>
+  <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
+  <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-center text-blue-900 drop-shadow-md">
+    📋 My Bookings
+  </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {bookings.map((b) => (
-          <div
-            key={b.id}
-            className="bg-white rounded-2xl shadow-2xl p-5 border-l-8 border-blue-500 transform hover:scale-105 transition-all duration-300"
+  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {bookings.map((b) => (
+      <div
+        key={b.id}
+        className="bg-white rounded-2xl shadow-2xl p-5 border-l-8 border-blue-500 transform hover:scale-105 transition-all duration-300"
+      >
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-bold text-lg sm:text-xl text-blue-700">{b.passengerName}</h3>
+          <span className="text-sm sm:text-base font-semibold text-gray-600">{b.date}</span>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-sm sm:text-base text-gray-700 mb-1">
+            <FaCar className="inline mr-1 text-blue-500" /> {b.car}
+          </p>
+          <p className="text-sm sm:text-base text-gray-700 mb-1">
+            <FaRoute className="inline mr-1 text-green-500" /> {b.from} → {b.to}
+          </p>
+          <p className="text-sm sm:text-base text-gray-700 mb-1">Seats: {b.seats}</p>
+          <p className="text-base font-semibold text-green-700 mb-1">R {b.price}</p>
+          <p className="text-sm sm:text-base text-gray-600 truncate">{b.email} | {b.phone}</p>
+        </div>
+
+        <div className="flex justify-between mt-4 gap-2">
+          <button
+            onClick={() => trackBooking(b)}
+            className="flex-1 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 shadow-md transition text-sm sm:text-base"
           >
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-lg sm:text-xl text-blue-700">{b.passengerName}</h3>
-              <span className="text-sm sm:text-base font-semibold text-gray-600">{b.date}</span>
-            </div>
+            <FaMapMarkerAlt /> Track
+          </button>
 
-            <div className="space-y-1">
-              <p className="text-sm sm:text-base text-gray-700 mb-1">
-                <FaCar className="inline mr-1 text-blue-500" /> {b.car}
-              </p>
-              <p className="text-sm sm:text-base text-gray-700 mb-1">
-                <FaRoute className="inline mr-1 text-green-500" /> {b.from} → {b.to}
-              </p>
-              <p className="text-sm sm:text-base text-gray-700 mb-1">Seats: {b.seats}</p>
-              <p className="text-base font-semibold text-green-700 mb-1">R {b.price}</p>
-              <p className="text-sm sm:text-base text-gray-600 truncate">{b.email} | {b.phone}</p>
-            </div>
+          <button
+            onClick={() => handleEditPayment(b)}
+            className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 shadow-md transition text-sm sm:text-base"
+          >
+            Edit / Pay
+          </button>
+        </div>
 
-            <div className="flex justify-between mt-4 gap-2">
-              <button
-                onClick={() => trackBooking(b)}
-                className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-500 shadow-md transition text-sm sm:text-base"
-              >
-                <FaMapMarkerAlt /> Track
-              </button>
-
-              <button
-                onClick={() => handleEditPayment(b)}
-                className="flex-1 bg-yellow-500 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-yellow-400 shadow-md transition text-sm sm:text-base"
-              >
-                Edit / Pay
-              </button>
-            </div>
-
-            {/* Map view */}
-            {selectedBooking?.id === b.id && userLocation && (
-              <div className="mt-4 h-48 w-full rounded-lg overflow-hidden">
-                <MapContainer
-                  center={userLocation}
-                  zoom={13}
-                  scrollWheelZoom={false}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  <Marker position={userLocation}>
-                    <Popup>
-                      {navigator.geolocation
-                        ? "Your Current Location"
-                        : "This is a sample location, actual tracking is unavailable."}
-                    </Popup>
-                  </Marker>
-                </MapContainer>
-              </div>
-            )}
+        {/* Map view */}
+        {selectedBooking?.id === b.id && userLocation && (
+          <div className="mt-4 h-48 w-full rounded-lg overflow-hidden">
+            <MapContainer
+              center={userLocation}
+              zoom={13}
+              scrollWheelZoom={false}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <Marker position={userLocation}>
+                <Popup>
+                  {navigator.geolocation
+                    ? "Your Current Location"
+                    : "This is a sample location, actual tracking is unavailable."}
+                </Popup>
+              </Marker>
+            </MapContainer>
           </div>
-        ))}
+        )}
       </div>
-    </div>
+    ))}
+  </div>
+</div>
+
   );
 };
 
