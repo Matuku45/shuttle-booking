@@ -127,10 +127,14 @@ const AllShuttles = () => {
             className="border px-3 py-2 rounded-lg w-full"
           />
         </div>
+
+        {/* Add / Update Button */}
         <div className="flex justify-end mb-6">
           <button
             onClick={handleSave}
-            className="bg-yellow-400 text-black px-6 py-2 rounded-lg hover:bg-yellow-500"
+            className="px-6 py-2 rounded-lg font-semibold shadow-md
+              bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600
+              text-black hover:brightness-110 transition"
           >
             {editingShuttle ? "Update Shuttle" : "Add Shuttle"}
           </button>
@@ -148,7 +152,19 @@ const AllShuttles = () => {
                 key={s.id}
                 className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all"
               >
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{s.route}</h3>
+                {/* ✨ Route with green animated arrow */}
+                <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  {s.route.includes("->") ? (
+                    <>
+                      <span>{s.route.split("->")[0].trim()}</span>
+                      <span className="text-green-600 text-2xl animate-pulse">➡️</span>
+                      <span>{s.route.split("->")[1].trim()}</span>
+                    </>
+                  ) : (
+                    s.route
+                  )}
+                </h3>
+
                 <p className="text-gray-700 mb-1">
                   📅 <strong>Date:</strong> {s.date}
                 </p>
@@ -164,7 +180,9 @@ const AllShuttles = () => {
                 <p className="text-gray-900 font-extrabold mt-2">
                   💰 <strong>Price:</strong> R{s.price}
                 </p>
+
                 <div className="flex gap-3 mt-4">
+                  {/* Edit Button */}
                   <button
                     onClick={() => {
                       setEditingShuttle(s);
@@ -177,13 +195,19 @@ const AllShuttles = () => {
                         price: s.price,
                       });
                     }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
+                    className="px-4 py-2 rounded-lg font-semibold shadow-md
+                      bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600
+                      text-white hover:brightness-110 transition"
                   >
                     ✏️ Edit
                   </button>
+
+                  {/* Delete Button */}
                   <button
                     onClick={() => handleDelete(s.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500"
+                    className="px-4 py-2 rounded-lg font-semibold shadow-md
+                      bg-gradient-to-r from-red-400 via-red-500 to-red-600
+                      text-white hover:brightness-110 transition"
                   >
                     ❌ Delete
                   </button>

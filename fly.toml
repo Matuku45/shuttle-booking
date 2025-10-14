@@ -1,17 +1,26 @@
-app = "shuttle-booking-app-rough-wind-1710"
-primary_region = "jnb"
+# fly.toml app configuration file generated for shuttle-booking-app-blue-violet-2485 on 2025-10-14T22:02:41+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'shuttle-booking-app-blue-violet-2485'
+primary_region = 'jnb'
 
 [build]
+
+[deploy]
+
+[env]
+  NODE_ENV = 'production'
 
 [http_service]
   internal_port = 80
   force_https = true
   auto_start_machines = true
   min_machines_running = 1
-  processes = ["app"]
+  processes = ['app']
 
-[env]
-  NODE_ENV = "production"
-
-[deploy]
-  # optional: specify Dockerfile if using custom build
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

@@ -269,7 +269,22 @@ const PassengerDashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4">
               {shuttles.map((shuttle) => (
                 <div key={shuttle.id} className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 rounded-xl p-5 shadow-lg transform hover:scale-105 transition-all duration-500 text-white space-y-2">
-                  <div className="text-xl font-bold">{shuttle.route}</div>
+                    <div className="flex flex-col items-center py-4 space-y-4">
+      {shuttle.route
+        .split(",") // split the route by commas
+        .filter((city) => city && city.trim() !== "") // remove empty or invalid entries
+        .map((city, index, arr) => (
+          <React.Fragment key={index}>
+            <div className="text-xl font-bold text-blue-600">{city.trim()}</div>
+            {/* Add animated arrow between cities except after the last one */}
+            {index < arr.length - 1 && (
+              <div className="relative flex items-center justify-center py-4">
+                <span className="text-green-400 text-5xl animate-bounce">➡️</span>
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+    </div>
                   <p>{shuttle.date} • {shuttle.time}</p>
                   <p>Countdown: {countdowns[shuttle.id]}</p>
                   <p>Car: {DEFAULT_CAR.name}</p>
@@ -291,12 +306,13 @@ const PassengerDashboard = () => {
                     onChange={(e) => setUser({ ...user, phone: e.target.value })}
                     className="border border-gray-200 rounded-md p-2 w-full text-black"
                   />
-                  <button
-                    onClick={() => handleBooking(shuttle)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-3 mt-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105"
-                  >
-                    Book & Pay
-                  </button>
+      <button
+  onClick={() => handleBooking(shuttle)}
+  className="w-full bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold text-lg py-3 mt-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 hover:from-red-500 hover:via-red-600 hover:to-red-700"
+>
+  Book & Pay
+</button>
+
                 </div>
               ))}
             </div>
