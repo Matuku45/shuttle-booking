@@ -257,11 +257,12 @@ const PassengerDashboard = () => {
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6 w-full">
         {/* Hamburger for small screens */}
         <button
-          className="md:hidden bg-red-600 text-white px-4 py-2 rounded-lg font-bold mb-4 self-start"
-          onClick={() => setSidebarOpen(true)}
-        >
-          ☰ Menu
-        </button>
+  className="md:hidden bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-white px-4 py-2 rounded-lg font-bold mb-4 self-start shadow-lg hover:scale-105 transition-transform duration-300"
+  onClick={() => setSidebarOpen(true)}
+>
+  ☰ Menu
+</button>
+
 {activeTab === "book" && (
   <section className="space-y-6">
     <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-wide">
