@@ -10,6 +10,7 @@ import PassengerDashboard from "./pages/PassengerDashboard";
 import AdminDashboard from "./pages/AdminDashBoard";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
+import Location from "./pages/location"; // ✅ Fixed import name
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/login" element={<Login />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/location" element={<Location />} /> {/* ✅ Added route */}
           </Routes>
         </main>
 

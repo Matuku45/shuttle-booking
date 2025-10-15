@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
+// ✅ Corrected dummy coordinates: [latitude, longitude]
 const dummyRoute = {
   geometry: [
     [-26.17248, 28.05364],
@@ -17,17 +18,18 @@ const dummyRoute = {
     "Turn right onto Street 1",
     "Continue straight for 200m",
     "Turn left onto Street 2",
-    "Arrive at destination"
-  ]
+    "Arrive at destination",
+  ],
 };
 
 const LocationPage = () => {
   const [routeData, setRouteData] = useState(dummyRoute);
   const [animatedCoords, setAnimatedCoords] = useState([]);
 
-  // Animate route
+  // ✅ Animate route gradually
   useEffect(() => {
-    if (!routeData || !routeData.geometry) return;
+    if (!routeData || !routeData.geometry || routeData.geometry.length === 0)
+      return;
 
     setAnimatedCoords([]);
     const coords = routeData.geometry;
@@ -35,17 +37,20 @@ const LocationPage = () => {
 
     const interval = setInterval(() => {
       if (index < coords.length) {
-        setAnimatedCoords((prev) => [...prev, coords[index]]);
+        const next = coords[index];
+        if (next && next.length === 2) {
+          setAnimatedCoords((prev) => [...prev, next]);
+        }
         index++;
       } else {
         clearInterval(interval);
       }
-    }, 300); // speed of animation
+    }, 400); // animation speed
 
     return () => clearInterval(interval);
   }, [routeData]);
 
-  // Handle file upload
+  // ✅ Safe file upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -53,7 +58,11 @@ const LocationPage = () => {
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target.result);
-        setRouteData(json);
+        if (json.geometry && Array.isArray(json.geometry)) {
+          setRouteData(json);
+        } else {
+          alert("Invalid JSON structure. Must include 'geometry' array.");
+        }
       } catch (err) {
         alert("Invalid JSON file");
       }
@@ -62,45 +71,63 @@ const LocationPage = () => {
     reader.readAsText(file);
   };
 
-  const center = animatedCoords.length
-    ? animatedCoords[0]
-    : dummyRoute.geometry[0];
+  const center =
+    animatedCoords.length > 0
+      ? animatedCoords[0]
+      : routeData.geometry && routeData.geometry.length > 0
+      ? routeData.geometry[0]
+      : [-26.17248, 28.05364]; // fallback center
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Shuttle Route Viewer</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">
+        🚐 Shuttle Route Viewer
+      </h2>
 
       <div className="mb-4 text-center">
-        <input type="file" accept=".json" onChange={handleFileUpload} />
+        <input
+          type="file"
+          accept=".json"
+          onChange={handleFileUpload}
+          className="border border-gray-300 p-2 rounded"
+        />
       </div>
 
-      <MapContainer
-        center={center}
-        zoom={15}
-        style={{ height: "500px", width: "100%", marginBottom: "20px" }}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        />
+      <div className="rounded overflow-hidden shadow-lg mb-6">
+        <MapContainer
+          center={center}
+          zoom={15}
+          style={{ height: "500px", width: "100%" }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+          />
 
-        {animatedCoords.length > 0 && (
-          <>
-            <Polyline positions={animatedCoords} color="blue" />
-            <Marker position={animatedCoords[animatedCoords.length - 1]}>
-              <Popup>Current Position</Popup>
-            </Marker>
-          </>
-        )}
-      </MapContainer>
+          {animatedCoords.length > 0 && (
+            <>
+              <Polyline positions={animatedCoords} color="blue" />
+              <Marker position={animatedCoords[animatedCoords.length - 1]}>
+                <Popup>Current Position</Popup>
+              </Marker>
+            </>
+          )}
+        </MapContainer>
+      </div>
 
       <div className="bg-gray-100 p-4 rounded shadow">
-        <h3 className="text-xl font-semibold mb-2">Directions</h3>
-        <ol className="list-decimal ml-6">
-          {routeData.directions.map((step, idx) => (
-            <li key={idx} className="mb-1">{step}</li>
-          ))}
-        </ol>
+        <h3 className="text-xl font-semibold mb-2">🧭 Directions</h3>
+        {routeData.directions && routeData.directions.length > 0 ? (
+          <ol className="list-decimal ml-6">
+            {routeData.directions.map((step, idx) => (
+              <li key={idx} className="mb-1">
+                {step}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p>No directions available.</p>
+        )}
       </div>
     </div>
   );
