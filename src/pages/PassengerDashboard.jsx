@@ -262,58 +262,91 @@ const PassengerDashboard = () => {
         >
           ☰ Menu
         </button>
-
 {activeTab === "book" && (
   <section className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Shuttles</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4">
+    <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-wide">
+      🚍 Available Shuttles
+    </h2>
+
+    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6">
       {shuttles.map((shuttle) => {
         const seats = seatsSelection[shuttle.id] || 1;
         const price = Number(shuttle.price) || 0;
+
+        // Standardize route parts (split by "->")
+        const routeParts = shuttle.route ? shuttle.route.split("->") : ["Route not available"];
+
         return (
           <div
             key={shuttle.id}
-            className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 rounded-xl p-5 shadow-lg transform hover:scale-105 transition-all duration-500 text-white space-y-2"
+            className="bg-gradient-to-r from-red-400 via-pink-500 to-purple-500 rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all duration-500 text-white space-y-3"
           >
-            <div className="text-xl font-bold">{shuttle.route || "Route not available"}</div>
-            <p>{shuttle.date || "Date N/A"} • {shuttle.time || "Time N/A"}</p>
-            <p>Countdown: {countdowns[shuttle.id] || "N/A"}</p>
-            <p>Car: {DEFAULT_CAR.name}</p>
+            {/* Route Display with Animated Arrows */}
+            <div className="flex flex-col items-center text-center mb-3">
+              {routeParts.map((city, index) => (
+                <React.Fragment key={index}>
+                  <h3 className="text-xl font-bold">{city.trim()}</h3>
+                  {index < routeParts.length - 1 && (
+                    <div className="text-yellow-300 text-3xl animate-bounce mt-1 mb-1">➡️</div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
 
-            {/* Map */}
-            {shuttle.path && shuttle.path.length > 0 && (
-              <ShuttleMap path={shuttle.path} route={shuttle.route} />
-            )}
+            {/* Shuttle Details */}
+            <div className="space-y-1 text-white text-sm">
+              <p>
+                <span className="font-semibold">🕒 Departure:</span> {shuttle.date || "N/A"} • {shuttle.time || "N/A"}
+              </p>
+              <p>
+                <span className="font-semibold">💰 Price per Seat:</span>{" "}
+                <span className="font-bold text-lg">R{price.toFixed(2)}</span>
+              </p>
+              <p>
+                <span className="font-semibold">⏳ Countdown:</span>{" "}
+                <span className="font-mono">{countdowns[shuttle.id] || "N/A"}</span>
+              </p>
+              <p>
+                <span className="font-semibold">🚗 Vehicle:</span> {DEFAULT_CAR.name}
+              </p>
+            </div>
 
             {/* Inputs */}
-            <label className="block mt-2 font-semibold">Seats:</label>
-            <input
-              type="number"
-              min="1"
-              max={DEFAULT_CAR.seats}
-              value={seats}
-              onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
-              className="border border-gray-200 rounded-md p-2 w-full text-black"
-            />
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="block font-semibold">🎟️ Seats:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={DEFAULT_CAR.seats}
+                  value={seats}
+                  onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
+                  className="border border-gray-200 rounded-md p-2 w-full text-black"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold">📞 Phone Number:</label>
+                <input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={user.phone || ""}
+                  onChange={(e) => setUser({ ...user, phone: e.target.value })}
+                  className="border border-gray-200 rounded-md p-2 w-full text-black"
+                />
+              </div>
+            </div>
 
-            <label className="block mt-2 font-semibold">Phone Number:</label>
-            <input
-              type="tel"
-              placeholder="Enter phone number"
-              value={user.phone || ""}
-              onChange={(e) => setUser({ ...user, phone: e.target.value })}
-              className="border border-gray-200 rounded-md p-2 w-full text-black"
-            />
-
+            {/* Total Price */}
             <div className="mt-2 font-semibold text-lg">
               Total: R{(price * seats).toFixed(2)}
             </div>
 
+            {/* Book Button */}
             <button
               onClick={() => handleBooking(shuttle)}
-              className="w-full bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold text-lg py-3 mt-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 hover:from-red-500 hover:via-red-600 hover:to-red-700"
+              className="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white font-bold text-lg py-3 mt-3 rounded-xl shadow-md transform transition-all duration-300 hover:scale-105 hover:from-orange-400 hover:via-red-500 hover:to-pink-600"
             >
-              Book & Pay
+              🚐 Book & Pay
             </button>
           </div>
         );
@@ -321,6 +354,7 @@ const PassengerDashboard = () => {
     </div>
   </section>
 )}
+
 
         {activeTab === "bookings" && <Bookings />}
         {activeTab === "terms" && <Terms />}
