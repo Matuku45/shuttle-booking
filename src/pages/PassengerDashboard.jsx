@@ -157,38 +157,63 @@ const PassengerDashboard = () => {
     );
   };
 
-  const handleBooking = async (shuttle) => {
-    const seats = seatsSelection[shuttle.id] || 1;
-    if (!user.phone.trim()) return alert("Enter your phone number!");
-    if (!user.email.trim()) return alert("User email not found!");
+const handleBooking = async (shuttle) => {
+  const seats = seatsSelection[shuttle.id] || 1;
 
-    await requestUserLocation();
+  if (!user.phone.trim()) return alert("Enter your phone number!");
+  if (!user.email.trim()) return alert("User email not found!");
 
-    const newBooking = {
-      id: Math.floor(Math.random() * 1000000),
-      shuttle_id: shuttle.id,
-      passengerName: user.name,
-      email: user.email,
-      phone: user.phone,
-      route: shuttle.route,
-      date: shuttle.date,
-      time: shuttle.time,
-      seats,
-      price: shuttle.price * seats,
-      path: shuttle.path,
-      car: DEFAULT_CAR.name,
-    };
+  // Get user location if needed
+  await requestUserLocation();
 
-    const updatedBookings = [...bookings, newBooking];
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    localStorage.setItem("user", JSON.stringify(user));
+  const newBooking = {
+    id: Math.floor(Math.random() * 1000000),
+    shuttle_id: shuttle.id,
+    passengerName: user.name,
+    email: user.email,
+    phone: user.phone,
+    route: shuttle.route,
+    date: shuttle.date,
+    time: shuttle.time,
+    seats,
+    price: shuttle.price * seats,
+    path: shuttle.path,
+    car: DEFAULT_CAR.name,
+  };
 
+  // Save locally as before
+  const updatedBookings = [...bookings, newBooking];
+  setBookings(updatedBookings);
+  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+  localStorage.setItem("user", JSON.stringify(user));
+
+  try {
+    // Send booking to your API without token
+    const response = await fetch("http://localhost:3001/bookings", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(newBooking),
+});
+
+
+    const result = await response.json();
+
+    if (!result.success) {
+      console.error("API Booking failed:", result);
+      alert("Booking could not be saved to the server!");
+      return;
+    }
+
+    // Proceed with Stripe payment
     await savePayment(shuttle, seats);
-
     window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
     alert("Booking saved! Redirecting to payment...");
-  };
+  } catch (err) {
+    console.error("Error sending booking to API:", err);
+    alert("An error occurred while saving booking to API.");
+  }
+};
+
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen bg-gray-100 text-black overflow-hidden">
