@@ -32,14 +32,22 @@ const Header = ({ onSignUpClick, onLoginClick }) => {
         </nav>
 
         {/* Mobile menu toggle */}
-        <div className="md:hidden">
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-white text-3xl focus:outline-none"
-          >
-            {mobileOpen ? "✕" : "☰"}
-          </button>
-        </div>
+     <div className="md:hidden flex items-center justify-end">
+  <button
+    onClick={() => setMobileOpen(!mobileOpen)}
+    className={`text-3xl font-bold focus:outline-none transition-all duration-300 transform 
+      bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 
+      bg-clip-text text-transparent 
+      hover:scale-110 active:scale-95`}
+  >
+    {mobileOpen ? (
+      <span className="transition-opacity duration-300 opacity-100">✕</span>
+    ) : (
+      <span className="transition-opacity duration-300 opacity-100">☰</span>
+    )}
+  </button>
+</div>
+
       </div>
 
       {/* Mobile navigation */}
