@@ -1,45 +1,44 @@
 import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute } from "react-icons/fa";
 
-const dummyBookings = [
-  {
-    id: 1,
-    passengerName: "Thabiso Mapoulo",
-    email: "thabiso.mapoulo@example.com",
-    phone: "+27 82 555 1234",
-    from: "Cape Town",
-    to: "Stellenbosch",
-    date: "2025-10-15",
-    seats: 2,
-    price: 150,
-    car: "Mercedes Benz",
-  },
-  {
-    id: 2,
-    passengerName: "Naledi Mokoena",
-    email: "naledi.mokoena@example.com",
-    phone: "+27 82 999 4321",
-    from: "Johannesburg",
-    to: "Pretoria",
-    date: "2025-10-16",
-    seats: 4,
-    price: 300,
-    car: "Hyundai Family Car",
-  },
-];
-
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedBookings = JSON.parse(localStorage.getItem("bookings"));
-    if (storedBookings && storedBookings.length > 0) {
-      setBookings(storedBookings);
-    } else {
-      setBookings(dummyBookings);
-      localStorage.setItem("bookings", JSON.stringify(dummyBookings));
-    }
+    const fetchBookings = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/bookings");
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.bookings)) {
+          const apiBookings = data.bookings.map((b) => ({
+            ...b,
+            from: b.route?.split(" → ")[0] || "",
+            to: b.route?.split(" → ")[1] || "",
+          }));
+          setBookings(apiBookings);
+        } else {
+          setBookings([]);
+        }
+      } catch (err) {
+        console.error("Error fetching bookings from API:", err);
+        setBookings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <p className="text-blue-700 text-lg font-semibold">Loading bookings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
