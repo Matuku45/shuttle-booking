@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// Component to handle map clicks
-const MapClickHandler = ({ addPoint }) => {
-  useMapEvents({
-    click(e) {
-      addPoint([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-  return null;
-};
-
 const LocationPage = () => {
+  // ✅ Pre-fill with dummy coordinates
+  const [from, setFrom] = useState("-26.17248,28.05364");
+  const [to, setTo] = useState("-26.17328,28.05316");
   const [routeData, setRouteData] = useState({ geometry: [], directions: [] });
   const [animatedCoords, setAnimatedCoords] = useState([]);
-  const [selectedPoints, setSelectedPoints] = useState([]);
 
-  // Animate route
+  // Animate route gradually
   useEffect(() => {
     if (!routeData.geometry || routeData.geometry.length === 0) return;
     setAnimatedCoords([]);
@@ -34,9 +26,6 @@ const LocationPage = () => {
 
   const center = animatedCoords[0] || routeData.geometry[0] || [-26.17248, 28.05364];
 
-  const addPoint = (point) => setSelectedPoints((prev) => [...prev, point]);
-
-  // Decode GraphHopper polyline
   const decodePolyline = (encoded) => {
     if (!encoded) return [];
     try {
@@ -47,13 +36,13 @@ const LocationPage = () => {
     }
   };
 
-  // GET route from backend
+  // Fetch route from backend
   const fetchRoute = async () => {
-    if (selectedPoints.length < 2) return alert("Select at least 2 points");
+    if (!from || !to) return alert("Enter both From and To coordinates in format lat,lng");
     try {
-      const [origin, destination] = selectedPoints;
-      const query = `origin=${origin[0]},${origin[1]}&destination=${destination[0]},${destination[1]}`;
-      const res = await fetch(`http://localhost:3001/api/graphhopper/route?${query}`);
+      const res = await fetch(
+        `http://localhost:3001/api/graphhopper/route?origin=${from}&destination=${to}`
+      );
       const data = await res.json();
       if (data.success) {
         const decoded = decodePolyline(data.route.encoded_polyline);
@@ -66,15 +55,14 @@ const LocationPage = () => {
     }
   };
 
-  // POST route to backend
+  // Save route to backend
   const saveRoute = async () => {
     if (!routeData.geometry.length) return alert("No route to save");
     try {
-      const payload = routeData;
       const res = await fetch("http://localhost:3001/api/graphhopper/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(routeData),
       });
       const data = await res.json();
       alert(data.message || "Route saved successfully");
@@ -84,56 +72,88 @@ const LocationPage = () => {
     }
   };
 
-  const resetMap = () => {
-    setSelectedPoints([]);
+  const resetRoute = () => {
     setRouteData({ geometry: [], directions: [] });
     setAnimatedCoords([]);
+    setFrom("-26.17248,28.05364");
+    setTo("-26.17328,28.05316");
   };
 
   return (
-    <div className="p-6 bg-gradient-to-b from-blue-50 to-white min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-center text-blue-800">🗺️ Shuttle Route Explorer</h2>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-6">
+      <h1 className="text-4xl font-bold text-center text-blue-900 mb-6">
+        🗺️ Shuttle Route Planner
+      </h1>
 
-      <div className="flex justify-center gap-2 mb-4">
-        <button onClick={fetchRoute} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold">
-          Get Route
-        </button>
-        <button onClick={saveRoute} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold">
-          Save Route
-        </button>
-        <button onClick={resetMap} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 font-semibold">
-          Reset
-        </button>
+      <div className="max-w-3xl mx-auto bg-white rounded shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4">Enter Coordinates</h2>
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="From: lat,lng"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-4 py-2"
+          />
+          <input
+            type="text"
+            placeholder="To: lat,lng"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-4 py-2"
+          />
+        </div>
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={fetchRoute}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold"
+          >
+            Get Route
+          </button>
+          <button
+            onClick={saveRoute}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
+          >
+            Save Route
+          </button>
+          <button
+            onClick={resetRoute}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-semibold"
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
-      <div className="rounded shadow-lg overflow-hidden mb-6">
+      <div className="max-w-5xl mx-auto rounded shadow-lg overflow-hidden mb-6">
         <MapContainer center={center} zoom={15} style={{ height: "500px", width: "100%" }}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
           />
-          <MapClickHandler addPoint={addPoint} />
-
-          {selectedPoints.map((pt, idx) => (
+          {animatedCoords.length > 0 && <Polyline positions={animatedCoords} color="blue" />}
+          {routeData.geometry.map((pt, idx) => (
             <Marker key={idx} position={pt}>
-              <Popup>Point {idx + 1}</Popup>
+              <Popup>Step {idx + 1}</Popup>
             </Marker>
           ))}
-
-          {animatedCoords.length > 0 && <Polyline positions={animatedCoords} color="blue" />}
         </MapContainer>
       </div>
 
-      <div className="bg-white p-4 rounded shadow">
-        <h3 className="text-xl font-semibold mb-2 text-blue-700">🧭 Directions</h3>
+      <div className="max-w-3xl mx-auto bg-white rounded shadow p-6">
+        <h3 className="text-xl font-semibold text-blue-700 mb-2">🧭 Directions</h3>
         {routeData.directions.length > 0 ? (
           <ol className="list-decimal ml-6">
             {routeData.directions.map((step, idx) => (
-              <li key={idx} className="mb-1">{step}</li>
+              <li key={idx} className="mb-1">
+                {step}
+              </li>
             ))}
           </ol>
         ) : (
-          <p className="text-gray-500">Click on the map to select points and fetch route</p>
+          <p className="text-gray-500">
+            Dummy coordinates are pre-filled. Click "Get Route" to see directions and map.
+          </p>
         )}
       </div>
     </div>
