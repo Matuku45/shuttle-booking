@@ -2,49 +2,52 @@ import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = "https://shuttle-booking-system.fly.dev";
-
-const dummyBookings = [
-  {
-    id: 1,
-    passengerName: "Thabiso Mapoulo",
-    email: "thabiso.mapoulo@example.com",
-    phone: "+27 82 555 1234",
-    from: "Cape Town",
-    to: "Stellenbosch",
-    date: "2025-10-15T12:00:00",
-    seats: 2,
-    price: 150,
-    car: "Mercedes Benz",
-  },
-  {
-    id: 2,
-    passengerName: "Naledi Mokoena",
-    email: "naledi.mokoena@example.com",
-    phone: "+27 82 999 4321",
-    from: "Johannesburg",
-    to: "Pretoria",
-    date: "2025-10-16T09:00:00",
-    seats: 4,
-    price: 300,
-    car: "Hyundai Family Car",
-  },
-];
+const BASE_URL = "http://localhost:3001"; // Adjust your API base URL
 
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [editingBooking, setEditingBooking] = useState(null);
   const [timers, setTimers] = useState({});
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Get logged-in user's email from localStorage
+  const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
+
+  // Fetch bookings from API
   useEffect(() => {
-    const storedBookings = JSON.parse(localStorage.getItem("bookings"));
-    if (storedBookings?.length > 0) setBookings(storedBookings);
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/bookings`);
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.bookings)) {
+          // Filter bookings by logged-in email (ignore case)
+          const filteredBookings = data.bookings
+            .filter((b) => b.email?.toLowerCase() === loggedInEmail)
+            .map((b) => ({
+              ...b,
+              from: b.route?.split(" -> ")[0] || "",
+              to: b.route?.split(" -> ")[1] || "",
+            }));
+          setBookings(filteredBookings);
+        } else {
+          setBookings([]);
+        }
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
+        setBookings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (loggedInEmail) fetchBookings();
     else {
-      setBookings(dummyBookings);
-      localStorage.setItem("bookings", JSON.stringify(dummyBookings));
+      setBookings([]);
+      setLoading(false);
     }
-  }, []);
+  }, [loggedInEmail]);
 
   // Countdown timer logic
   useEffect(() => {
@@ -75,144 +78,140 @@ const AllBookings = () => {
     setBookings(updatedBookings);
   };
 
-  // Save payment to backend API
-  const savePayment = async (booking) => {
+  const goToLocation = () => navigate("/location");
+
+  // Update booking in API
+  const handleUpdateBooking = async (booking) => {
     try {
-      const paymentData = {
-        passenger_name: booking.passengerName,
-        passenger_phone: booking.phone,
-        shuttle_id: booking.id,
-        booking_id: booking.id,
-        seats: booking.seats,
-        amount: booking.price,
-        status: "Paid",
-        payment_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        car: booking.car,
+      const updatedBooking = {
+        ...booking,
+        price: Number(booking.seats) * 75, // Example: dynamic pricing
       };
 
-      const res = await fetch(`${BASE_URL}/api/payments/create`, {
-        method: "POST",
+      const res = await fetch(`${BASE_URL}/bookings/${booking.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentData),
+        body: JSON.stringify(updatedBooking),
       });
 
-      if (!res.ok) throw new Error("Failed to save payment");
-      console.log("✅ Payment saved successfully");
+      const data = await res.json();
+      if (!data.success) throw new Error("Failed to update booking");
+
+      const updatedBookings = bookings.map((b) => (b.id === booking.id ? updatedBooking : b));
+      setBookings(updatedBookings);
+      setEditingBooking(null);
+
+      // Redirect to Stripe payment
+      window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
+      alert("✅ Booking updated and payment saved!");
     } catch (err) {
-      console.error("❌ Payment API error:", err.message);
+      console.error("Error updating booking:", err);
+      alert("❌ Failed to update booking!");
     }
   };
 
-  const handleUpdatePayment = async (booking) => {
-    const updated = bookings.map((b) =>
-      b.id === booking.id
-        ? { ...b, price: Number(booking.seats) * 75 } // dynamic pricing
-        : b
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-100 via-white to-blue-200">
+        <p className="text-blue-700 text-lg font-semibold">Loading bookings...</p>
+      </div>
     );
-    setBookings(updated);
-    localStorage.setItem("bookings", JSON.stringify(updated));
-
-    await savePayment(booking);
-
-    window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
-    alert("✅ Booking updated and payment saved!");
-    setEditingBooking(null);
-  };
-
-  const goToLocation = () => navigate("/location");
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
       <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-center text-blue-900 drop-shadow-md">
-        🚐 My Bookings
+        🛡️ My Bookings
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {bookings.map((b) => (
-          <div
-            key={b.id}
-            className="bg-white rounded-2xl shadow-2xl p-5 border-l-8 border-blue-500 transform hover:scale-105 transition-all duration-300 relative"
-          >
-            {/* Countdown Timer */}
-            <div className="absolute top-4 right-4 flex items-center gap-1 text-sm font-semibold text-red-600">
-              <FaClock /> {timers[b.id]}
-            </div>
+      {bookings.length === 0 ? (
+        <p className="text-center text-gray-700 font-semibold text-lg">
+          No bookings found for your account.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {bookings.map((b) => (
+            <div
+              key={b.id}
+              className="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-2xl shadow-xl p-5 border-l-8 border-blue-600 transform hover:scale-105 transition-all duration-300 relative"
+            >
+              <div className="absolute top-4 right-4 flex items-center gap-1 text-sm font-semibold text-red-600">
+                <FaClock /> {timers[b.id]}
+              </div>
 
-            <h3 className="font-bold text-xl text-blue-700 mb-3">
-              {b.passengerName}
-            </h3>
+              <h3 className="font-bold text-xl text-white mb-3">{b.passengerName}</h3>
 
-            <p className="text-sm text-gray-700">
-              <FaCar className="inline mr-2 text-blue-500" />
-              {b.car}
-            </p>
-
-            <p className="text-sm text-gray-700">
-              <FaRoute className="inline mr-2 text-green-500" /> {b.from} → {b.to}
-            </p>
-
-            <div className="my-3 space-y-2">
-              <label className="block text-sm font-semibold">Seats:</label>
-              {editingBooking?.id === b.id ? (
-                <input
-                  type="number"
-                  value={b.seats}
-                  onChange={(e) => handleFieldChange(e, b, "seats")}
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                />
-              ) : (
-                <p>{b.seats}</p>
-              )}
-
-              <label className="block text-sm font-semibold">Phone Number:</label>
-              {editingBooking?.id === b.id ? (
-                <input
-                  type="tel"
-                  value={b.phone}
-                  onChange={(e) => handleFieldChange(e, b, "phone")}
-                  className="border border-gray-300 rounded-md p-2 w-full"
-                />
-              ) : (
-                <p>{b.phone}</p>
-              )}
-
-              <p className="text-lg font-semibold text-green-700">
-                💰 R {b.price}
+              <p className="text-sm text-white flex items-center gap-2">
+                <FaCar className="text-yellow-300" /> {b.car}
+              </p>
+              <p className="text-sm text-white flex items-center gap-2">
+                <FaRoute className="text-green-200" /> {b.from} → {b.to}
               </p>
 
-              <p className="text-gray-700 text-sm flex items-center">
-                <FaEnvelope className="mr-2 text-gray-500" /> {b.email}
-              </p>
-            </div>
+              <div className="my-3 space-y-2 text-white">
+                <label className="block text-sm font-semibold">Seats:</label>
+                {editingBooking?.id === b.id ? (
+                  <input
+                    type="number"
+                    value={b.seats}
+                    onChange={(e) => handleFieldChange(e, b, "seats")}
+                    className="border border-gray-300 rounded-md p-2 w-full text-black"
+                  />
+                ) : (
+                  <p>{b.seats}</p>
+                )}
 
-            <div className="flex flex-col sm:flex-row justify-between mt-4 gap-3">
-              <button
-                onClick={goToLocation}
-                className="flex-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-              >
-                <FaGlobeAfrica className="inline mr-2" /> View Location
-              </button>
+                <label className="block text-sm font-semibold">Phone:</label>
+                {editingBooking?.id === b.id ? (
+                  <input
+                    type="tel"
+                    value={b.phone}
+                    onChange={(e) => handleFieldChange(e, b, "phone")}
+                    className="border border-gray-300 rounded-md p-2 w-full text-black"
+                  />
+                ) : (
+                  <p className="flex items-center gap-2">
+                    <FaPhone /> {b.phone}
+                  </p>
+                )}
 
-              {editingBooking?.id === b.id ? (
+                <p className="text-lg font-semibold text-green-200">
+                  💰 R {b.price}
+                </p>
+
+                <p className="flex items-center gap-2 text-sm">
+                  <FaEnvelope /> {b.email}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between mt-4 gap-3">
                 <button
-                  onClick={() => handleUpdatePayment(b)}
-                  className="flex-1 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
+                  onClick={goToLocation}
+                  className="flex-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
                 >
-                  Update & Pay
+                  <FaGlobeAfrica className="inline mr-2" /> View Location
                 </button>
-              ) : (
-                <button
-                  onClick={() => handleEdit(b)}
-                  className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                >
-                  Edit
-                </button>
-              )}
+
+                {editingBooking?.id === b.id ? (
+                  <button
+                    onClick={() => handleUpdateBooking(b)}
+                    className="flex-1 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
+                  >
+                    Update & Pay
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleEdit(b)}
+                    className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
