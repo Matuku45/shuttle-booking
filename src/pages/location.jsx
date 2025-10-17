@@ -9,16 +9,22 @@ const LocationPage = () => {
   const [directions, setDirections] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const API_KEY = "YOUR_GRAPH_HOPPER_API_KEY"; // replace with your key
+  const API_KEY = "0aab22de-93bc-4aeb-a6d6-f405f07211ab"; // GraphHopper key
+  const BASE_URL = "http://localhost:3001"; // backend API base URL
+
+  // Get logged-in user info
+  const user = JSON.parse(localStorage.getItem("user"));
+  const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+  const userBooking = bookings.find(
+    (b) => b.email?.toLowerCase() === user?.email?.toLowerCase()
+  );
 
   // Extract coordinates from GraphHopper URL
   const extractCoordinatesFromUrl = (url) => {
     try {
       const params = new URL(url).searchParams;
       const points = params.getAll("point");
-      if (points.length >= 2) {
-        return points.map((p) => p.split("_")[0]); // get lat,lng
-      }
+      if (points.length >= 2) return points.map((p) => p.split("_")[0]);
       return [];
     } catch (err) {
       console.error("Invalid GraphHopper URL:", err);
@@ -41,57 +47,81 @@ const LocationPage = () => {
     }
   };
 
+  // Fetch directions from GraphHopper
+  const fetchDirections = async (start, end) => {
+    try {
+      const payload = {
+        points: [
+          start.split(",").map(Number).reverse(),
+          end.split(",").map(Number).reverse(),
+        ],
+        profile: "car",
+        instructions: true,
+        calc_points: true,
+        elevation: false,
+        locale: "en",
+      };
 
-  
-
-const fetchDirections = async (start, end) => {
-  try {
-    const payload = {
-      points: [
-        start.split(",").map(Number).reverse(), // [lon, lat]
-        end.split(",").map(Number).reverse(),
-      ],
-      profile: "car",
-      instructions: true,
-      calc_points: true, // ✅ must be true to get directions
-      elevation: false,
-      locale: "en",
-    };
-
-    const res = await fetch(
-      `https://graphhopper.com/api/1/route?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    const data = await res.json();
-    console.log("GraphHopper response:", data); // debug output
-
-    if (data.paths && data.paths.length > 0) {
-      // map instructions with distance
-      const steps = data.paths[0].instructions.map(
-        (step) => `${step.text} (${step.distance.toFixed(0)} m)`
+      const res = await fetch(
+        `https://graphhopper.com/api/1/route?key=${API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
       );
-      setDirections(steps);
-    } else {
+      const data = await res.json();
+      if (data.paths && data.paths.length > 0) {
+        const steps = data.paths[0].instructions.map(
+          (step) => `${step.text} (${step.distance.toFixed(0)} m)`
+        );
+        setDirections(steps);
+        return steps;
+      } else {
+        setDirections([]);
+        alert("⚠️ No directions returned. Check coordinates or API key.");
+        return [];
+      }
+    } catch (err) {
+      console.error("Error fetching directions:", err);
       setDirections([]);
-      alert("⚠️ No directions returned. Check coordinates or API key.");
+      alert("❌ Error fetching directions from GraphHopper API.");
+      return [];
     }
-  } catch (err) {
-    console.error("Error fetching directions:", err);
-    setDirections([]);
-    alert("❌ Error fetching directions from GraphHopper API.");
-  }
-};
+  };
 
+  // Update user's booking path in backend and localStorage
+  const updateBookingPath = async (pathSteps) => {
+    if (!userBooking) return;
 
-  // Main handler
+    const pathString = pathSteps.join(" -> ");
+
+    // Update localStorage
+    const updatedBookings = bookings.map((b) =>
+      b.id === userBooking.id ? { ...b, path: pathString } : b
+    );
+    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+
+    // Update backend API
+    try {
+      const res = await fetch(`${BASE_URL}/bookings/${userBooking.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...userBooking, path: pathString }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to update booking");
+      console.log("Booking path updated on backend:", pathString);
+    } catch (err) {
+      console.error("Failed to update booking on backend:", err);
+      alert("❌ Failed to update booking path on server.");
+    }
+  };
+
   const handleExtractAndSave = async () => {
     setLoading(true);
     setDirections([]);
+
     const coords = extractCoordinatesFromUrl(ghUrl);
     if (coords.length !== 2) {
       alert("⚠️ Invalid URL! Paste a valid GraphHopper link with two locations.");
@@ -107,7 +137,9 @@ const fetchDirections = async (start, end) => {
     setFromAddress(fromAddr);
     setToAddress(toAddr);
 
-    await fetchDirections(coords[0], coords[1]);
+    const steps = await fetchDirections(coords[0], coords[1]);
+    await updateBookingPath(steps);
+
     setLoading(false);
   };
 
@@ -155,7 +187,7 @@ const fetchDirections = async (start, end) => {
             loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           } text-white px-5 py-2 rounded-lg font-semibold transition-all`}
         >
-          {loading ? "Processing..." : "Extract & Get Directions"}
+          {loading ? "Processing..." : "Extract & Save Directions"}
         </button>
       </div>
 
@@ -181,7 +213,7 @@ const fetchDirections = async (start, end) => {
           </ol>
         ) : (
           <p className="text-gray-500">
-            Paste a GraphHopper URL and click “Extract & Get Directions”.
+            Paste a GraphHopper URL and click “Extract & Save Directions”.
           </p>
         )}
       </div>
