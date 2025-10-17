@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FaMapMarkedAlt, FaRoute, FaArrowRight, FaRedo } from "react-icons/fa";
 
 const LocationPage = () => {
   const [ghUrl, setGhUrl] = useState("");
@@ -154,7 +155,7 @@ const LocationPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6">
-      <h1 className="text-4xl font-extrabold text-center text-blue-800 mb-8 drop-shadow-sm">
+      <h1 className="text-4xl font-extrabold text-center text-blue-800 mb-8 drop-shadow-md animate-pulse">
         🗺️ Shuttle Route Planner
       </h1>
 
@@ -163,67 +164,67 @@ const LocationPage = () => {
           href="https://graphhopper.com/maps/?profile=car&layer=Omniscale"
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all"
+          className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:scale-105 transition-transform text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
         >
-          🌍 Open GraphHopper Map
+          <FaMapMarkedAlt className="animate-bounce" /> Open GraphHopper Map
         </a>
       </div>
 
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
-        <h2 className="text-2xl font-semibold text-blue-700 mb-3">
-          Paste GraphHopper Route URL
-        </h2>
+      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-200">
+        <h2 className="text-2xl font-bold text-blue-700 mb-4">Paste GraphHopper Route URL</h2>
         <input
           type="text"
           value={ghUrl}
           onChange={(e) => setGhUrl(e.target.value)}
           placeholder="Paste your GraphHopper URL here"
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none mb-4"
+          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 outline-none mb-4 text-gray-800"
         />
         <button
           onClick={handleExtractAndSave}
           disabled={loading}
-          className={`${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          } text-white px-5 py-2 rounded-lg font-semibold transition-all`}
+          className={`w-full text-white font-bold py-3 rounded-xl shadow-lg transition-all ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:scale-105"
+          } flex justify-center items-center gap-2`}
         >
-          {loading ? "Processing..." : "Extract & Save Directions"}
+          {loading ? "Processing..." : <><FaArrowRight /> Extract & Save Directions</>}
         </button>
       </div>
 
       {from && to && (
-        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-4 mb-6 text-gray-700 border border-gray-200">
-          <h3 className="text-xl font-semibold text-blue-700 mb-2">📍 Route</h3>
-          <p>
-            <strong>From:</strong> {fromAddress} ({from})
-          </p>
-          <p>
-            <strong>To:</strong> {toAddress} ({to})
-          </p>
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-5 mb-6 border border-gray-200">
+          <h3 className="text-xl font-bold text-blue-700 mb-2 flex items-center gap-2">
+            <FaRoute className="text-green-500" /> Route
+          </h3>
+          <p className="text-gray-800"><strong>From:</strong> {fromAddress} ({from})</p>
+          <p className="text-gray-800"><strong>To:</strong> {toAddress} ({to})</p>
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6 border border-gray-100">
-        <h3 className="text-xl font-semibold text-blue-700 mb-3">🧭 Directions</h3>
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center gap-2">
+          🧭 Directions
+        </h3>
         {directions.length > 0 ? (
-          <ol className="list-decimal ml-6 space-y-1 text-gray-800">
+          <ol className="list-decimal ml-6 space-y-2 text-gray-800 animate-fadeIn">
             {directions.map((step, idx) => (
-              <li key={idx}>{step}</li>
+              <li key={idx} className="transition-transform hover:translate-x-2 hover:text-blue-600">
+                {step}
+              </li>
             ))}
           </ol>
         ) : (
-          <p className="text-gray-500">
-            Paste a GraphHopper URL and click “Extract & Save Directions”.
-          </p>
+          <p className="text-gray-500">Paste a GraphHopper URL and click “Extract & Save Directions”.</p>
         )}
       </div>
 
       <div className="flex justify-center mt-6">
         <button
           onClick={resetAll}
-          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-semibold"
+          className="bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 hover:scale-105 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform"
         >
-          Reset All
+          <FaRedo /> Reset All
         </button>
       </div>
     </div>
