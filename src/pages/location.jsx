@@ -41,42 +41,52 @@ const LocationPage = () => {
     }
   };
 
-  // Fetch directions
-  const fetchDirections = async (start, end) => {
-    try {
-      const payload = {
-        points: [
-          start.split(",").map(Number).reverse(), // [lon, lat]
-          end.split(",").map(Number).reverse(),
-        ],
-        profile: "car",
-        instructions: true,
-        calc_points: false,
-        elevation: false,
-        locale: "en",
-      };
 
-      const res = await fetch(
-        `https://graphhopper.com/api/1/route?key=${API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+  
 
-      const data = await res.json();
-      if (data.paths && data.paths.length > 0) {
-        const steps = data.paths[0].instructions.map((step) => step.text);
-        setDirections(steps);
-      } else {
-        setDirections([]);
+const fetchDirections = async (start, end) => {
+  try {
+    const payload = {
+      points: [
+        start.split(",").map(Number).reverse(), // [lon, lat]
+        end.split(",").map(Number).reverse(),
+      ],
+      profile: "car",
+      instructions: true,
+      calc_points: true, // ✅ must be true to get directions
+      elevation: false,
+      locale: "en",
+    };
+
+    const res = await fetch(
+      `https://graphhopper.com/api/1/route?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       }
-    } catch (err) {
-      console.error("Error fetching directions:", err);
+    );
+
+    const data = await res.json();
+    console.log("GraphHopper response:", data); // debug output
+
+    if (data.paths && data.paths.length > 0) {
+      // map instructions with distance
+      const steps = data.paths[0].instructions.map(
+        (step) => `${step.text} (${step.distance.toFixed(0)} m)`
+      );
+      setDirections(steps);
+    } else {
       setDirections([]);
+      alert("⚠️ No directions returned. Check coordinates or API key.");
     }
-  };
+  } catch (err) {
+    console.error("Error fetching directions:", err);
+    setDirections([]);
+    alert("❌ Error fetching directions from GraphHopper API.");
+  }
+};
+
 
   // Main handler
   const handleExtractAndSave = async () => {
