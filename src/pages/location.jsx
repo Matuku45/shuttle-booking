@@ -8,10 +8,11 @@ const LocationPage = () => {
   const [animatedCoords, setAnimatedCoords] = useState([]);
   const [from, setFrom] = useState("-26.17248,28.05364"); // dummy coordinates
   const [to, setTo] = useState("-26.17328,28.05316"); // dummy coordinates
+  const [ghUrl, setGhUrl] = useState("");
 
   // Animate route gradually
   useEffect(() => {
-    if (!routeData.geometry || routeData.geometry.length === 0) return;
+    if (!routeData.geometry.length) return;
     setAnimatedCoords([]);
     let index = 0;
     const interval = setInterval(() => {
@@ -36,17 +37,47 @@ const LocationPage = () => {
     }
   };
 
-  // Fetch route from GraphHopper API (via backend)
+  // Extract coordinates from GraphHopper URL
+  const extractCoordinatesFromUrl = (url) => {
+    try {
+      const params = new URL(url).searchParams;
+      const points = params.getAll("point");
+      if (points.length >= 2) {
+        return [points[0].split("_")[0], points[1].split("_")[0]]; // from, to
+      }
+      return [];
+    } catch (err) {
+      console.error("Invalid GraphHopper URL", err);
+      return [];
+    }
+  };
+
+  const handleExtractFromUrl = () => {
+    const coords = extractCoordinatesFromUrl(ghUrl);
+    if (coords.length === 2) {
+      setFrom(coords[0]);
+      setTo(coords[1]);
+    } else {
+      alert("Could not extract coordinates from URL. Make sure it's a valid GraphHopper map URL.");
+    }
+  };
+
+  // Fetch route from backend
   const fetchRoute = async () => {
     if (!from || !to) return alert("Enter both From and To coordinates (lat,lng format)");
     try {
-      const res = await fetch(
-        `http://localhost:3001/api/graphhopper/route?origin=${from}&destination=${to}`
-      );
+      const payload = { points: [from, to], profile: "car" };
+      const res = await fetch("http://localhost:3001/api/graphhopper/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const data = await res.json();
-      if (data.success) {
-        const decoded = decodePolyline(data.route.encoded_polyline);
-        const instructions = data.route.instructions.map((i) => i.text || "Step");
+      if (data.success && data.dummy_routes?.length > 0) {
+        // Use the first route as example
+        const route = data.dummy_routes[0];
+        const decoded = decodePolyline(route.encoded_polyline);
+        const instructions = route.instructions.map((i) => i.text || "Step");
         setRouteData({ geometry: decoded, directions: instructions });
       } else alert("No route returned");
     } catch (err) {
@@ -77,6 +108,7 @@ const LocationPage = () => {
     setAnimatedCoords([]);
     setFrom("");
     setTo("");
+    setGhUrl("");
   };
 
   return (
@@ -95,9 +127,29 @@ const LocationPage = () => {
         </a>
       </div>
 
+      {/* GraphHopper URL input */}
+      <div className="max-w-3xl mx-auto bg-white rounded shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4">Paste GraphHopper Map URL</h2>
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Paste GraphHopper map URL here"
+            value={ghUrl}
+            onChange={(e) => setGhUrl(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-4 py-2"
+          />
+          <button
+            onClick={handleExtractFromUrl}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-semibold"
+          >
+            Extract Coordinates
+          </button>
+        </div>
+      </div>
+
       {/* Coordinates input */}
       <div className="max-w-3xl mx-auto bg-white rounded shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4">Enter Coordinates</h2>
+        <h2 className="text-xl font-semibold text-blue-700 mb-4">Enter Coordinates Manually</h2>
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <input
             type="text"
@@ -162,7 +214,7 @@ const LocationPage = () => {
             ))}
           </ol>
         ) : (
-          <p className="text-gray-500">Enter coordinates and click "Get Route" to display directions</p>
+          <p className="text-gray-500">Enter coordinates or paste GraphHopper URL and click "Get Route"</p>
         )}
       </div>
     </div>
