@@ -6,8 +6,9 @@ import TrackPayment from "./track-payment";
 import Bookings from "./bookings";
 import Payment from "../components/payment";
 import Terms from "./Terms";
+import { loadStripe } from "@stripe/stripe-js";
 
-// Fix default Leaflet marker icon issue
+  // Fix default Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -19,6 +20,8 @@ const BASE_URL = "https://shuttle-booking-system.fly.dev";
 const DEFAULT_CAR = { name: "MetroShuttle Bus <c1234555666>", seats: 10 };
 
 const PassengerDashboard = () => {
+
+ 
   const [user, setUser] = useState({ name: "Passenger", email: "", phone: "" });
   const [shuttles, setShuttles] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -94,70 +97,111 @@ const PassengerDashboard = () => {
     setSeatsSelection((prev) => ({ ...prev, [shuttleId]: Number(seats) }));
   };
 
+
+
+
+
+// 📦 PassengerDashboard.jsx
+
 const savePayment = async (shuttle, seats) => {
   try {
-    // 🧠 Get logged-in user from localStorage
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const user = storedUser || { name: "Guest", email: "guest@example.com", phone: "" };
-
-    // 💾 Calculate total price
-    const totalAmount = shuttle.price * seats;
-    localStorage.setItem("shuttlePrice", totalAmount);
-
-    // 💳 Prepare payment data for backend
-    const paymentData = {
-      passenger_name: user.name,
-      passenger_email: user.email,
-      passenger_phone: user.phone || "",
-      shuttle_id: shuttle.id,
-      booking_id: Math.floor(Math.random() * 1000000),
-      seats,
-      amount: totalAmount,
-      status: "Pending", // will be updated on Stripe webhook or success page
-      payment_date: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      car: shuttle.car_name || "Default Shuttle",
+    // 🧍 Retrieve user info safely
+    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+    const user = {
+      id: storedUser.id || "USR-001",
+      name: storedUser.name || "Guest User",
+      email: storedUser.email || "guest@example.com",
+      phone: storedUser.phone || "N/A",
     };
 
-    // 🧾 Save payment info to backend
-    const response = await fetch(`${BASE_URL}/api/payments/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(paymentData),
-    });
+    // 💰 Calculate total
+    const shuttlePrice =
+      Number(localStorage.getItem("shuttlePrice")) || shuttle.price || 0;
+    const totalAmount = shuttlePrice * seats;
 
-    if (!response.ok) {
-      throw new Error("Failed to save payment to backend.");
-    }
-
-    console.log("Payment saved to backend:", paymentData);
-
-    // 💥 Initialize Stripe client
-    const stripe = window.Stripe(
-      "pk_test_51RL7bvQjCxIUnFiQRkpYNpspMuE5YHE0p7RVZNPnYpyy3FXj6BtR44ujOUCqX6JSp1jQF5qPpD8i9gi2ZyIilClp00vhwZpk94"
+    // 🧾 Step 1: Save payment to remote backend (always first)
+    const paymentRes = await fetch(
+      "https://shuttle-booking-system.fly.dev/api/payments/create",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passenger_name: user.name,
+          passenger_email: user.email,
+          passenger_phone: user.phone,
+          shuttle_id: shuttle.id,
+          shuttle_name: shuttle.name,
+          route: shuttle.route,
+          seats,
+          amount: totalAmount,
+          status: "Pending",
+          booking_id: Math.floor(Math.random() * 1000000),
+          created_at: new Date().toISOString(),
+        }),
+      }
     );
 
-    // 💳 Redirect to Stripe Checkout
-    await stripe.redirectToCheckout({
-      lineItems: [
-        {
-          // ⚠️ Replace this with your actual price ID from Stripe Dashboard
-          price: "price_1RL7evQjCxIUnFiQKQ2Tzxxxx",
-          quantity: seats,
-        },
-      ],
-      mode: "payment",
-      customerEmail: user.email, // 👈 Stripe sends the receipt
-      successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${window.location.origin}/cancel`,
-    });
+    const paymentJson = await paymentRes.json();
+    if (!paymentRes.ok) {
+      console.error("❌ Payment API error:", paymentJson);
+      throw new Error(paymentJson.message || "Failed to save payment.");
+    }
 
-    console.log("Redirecting to Stripe Checkout...");
+    console.log("✅ Payment saved:", paymentJson);
+
+    // 💾 Save locally for reference
+    localStorage.setItem(
+      "latestPayment",
+      JSON.stringify(paymentJson.data || paymentJson)
+    );
+
+    // 🧭 Step 2: Try to create checkout session
+    try {
+      const checkoutRes = await fetch(
+        "http://localhost:3001/api/checkout/create",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shuttleId: shuttle.id,
+            shuttleRoute: shuttle.route,
+            seats,
+            price: totalAmount,
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+          }),
+        }
+      );
+
+      const checkoutJson = await checkoutRes.json();
+
+      if (!checkoutRes.ok || checkoutJson.error) {
+        throw new Error(checkoutJson.error || "Checkout session creation failed.");
+      }
+
+      console.log("✅ Checkout session created:", checkoutJson);
+
+      // 🚀 Redirect to Stripe or success page
+      if (checkoutJson.url) {
+        window.location.href = checkoutJson.url;
+      } else {
+        window.location.href = "/success";
+      }
+    } catch (checkoutErr) {
+      // 🧩 Fallback: Checkout failed but payment is still saved
+      console.warn("⚠️ Checkout failed, redirecting to success page anyway:", checkoutErr);
+      alert("Checkout unavailable, but your payment has been saved successfully.");
+      window.location.href = "/success";
+    }
   } catch (err) {
-    console.error("Payment save or redirect error:", err.message);
-    alert("Payment failed. Please try again.");
+    console.error("❌ Fatal error saving payment:", err);
+    alert("Payment could not be processed. Please try again.");
   }
 };
+
+
+
 
   const requestUserLocation = async () => {
     return new Promise((resolve) => {

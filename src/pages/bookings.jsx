@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
+import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const BASE_URL = "http://localhost:3001"; // Adjust your API base URL
@@ -11,10 +11,9 @@ const AllBookings = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Get logged-in user's email from localStorage
   const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
 
-  // Fetch bookings from API
+  // Fetch bookings
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -22,7 +21,6 @@ const AllBookings = () => {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.bookings)) {
-          // Filter bookings by logged-in email (ignore case)
           const filteredBookings = data.bookings
             .filter((b) => b.email?.toLowerCase() === loggedInEmail)
             .map((b) => ({
@@ -43,13 +41,10 @@ const AllBookings = () => {
     };
 
     if (loggedInEmail) fetchBookings();
-    else {
-      setBookings([]);
-      setLoading(false);
-    }
+    else setLoading(false);
   }, [loggedInEmail]);
 
-  // Countdown timer logic
+  // Countdown timer
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
@@ -75,17 +70,25 @@ const AllBookings = () => {
     const updatedBookings = bookings.map((b) =>
       b.id === booking.id ? { ...b, [field]: e.target.value } : b
     );
+
+    // Recalculate price if seats changed
+    if (field === "seats") {
+      const originalPrice = Number(localStorage.getItem("shuttlePrice")) || 75;
+      updatedBookings.forEach((b) => {
+        if (b.id === booking.id) {
+          b.price = Number(e.target.value) * originalPrice;
+        }
+      });
+    }
+
     setBookings(updatedBookings);
   };
 
-  const goToLocation = () => navigate("/location");
-
-  // Update booking in API
   const handleUpdateBooking = async (booking) => {
     try {
       const updatedBooking = {
         ...booking,
-        price: Number(booking.seats) * 75, // Example: dynamic pricing
+        price: booking.price,
       };
 
       const res = await fetch(`${BASE_URL}/bookings/${booking.id}`, {
@@ -97,11 +100,10 @@ const AllBookings = () => {
       const data = await res.json();
       if (!data.success) throw new Error("Failed to update booking");
 
-      const updatedBookings = bookings.map((b) => (b.id === booking.id ? updatedBooking : b));
-      setBookings(updatedBookings);
+      setBookings(bookings.map((b) => (b.id === booking.id ? updatedBooking : b)));
       setEditingBooking(null);
 
-      // Redirect to Stripe payment
+      // Open Stripe payment (test URL)
       window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
       alert("✅ Booking updated and payment saved!");
     } catch (err) {
@@ -109,6 +111,26 @@ const AllBookings = () => {
       alert("❌ Failed to update booking!");
     }
   };
+
+  const handleDeleteBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to delete this booking?")) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}/bookings/${bookingId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("Failed to delete booking");
+
+      setBookings(bookings.filter((b) => b.id !== bookingId));
+      alert("✅ Booking deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting booking:", err);
+      alert("❌ Failed to delete booking!");
+    }
+  };
+
+  const goToLocation = () => navigate("/location");
 
   if (loading) {
     return (
@@ -142,8 +164,19 @@ const AllBookings = () => {
               <h3 className="font-bold text-xl text-white mb-3">{b.passengerName}</h3>
 
               <p className="text-sm text-white flex items-center gap-2">
-                <FaCar className="text-yellow-300" /> {b.car}
+                <FaCar className="text-yellow-300" />{" "}
+                {editingBooking?.id === b.id ? (
+                  <input
+                    type="text"
+                    value={b.car}
+                    onChange={(e) => handleFieldChange(e, b, "car")}
+                    className="border border-gray-300 rounded-md p-2 w-full text-black"
+                  />
+                ) : (
+                  b.car
+                )}
               </p>
+
               <p className="text-sm text-white flex items-center gap-2">
                 <FaRoute className="text-green-200" /> {b.from} → {b.to}
               </p>
@@ -153,6 +186,7 @@ const AllBookings = () => {
                 {editingBooking?.id === b.id ? (
                   <input
                     type="number"
+                    min={1}
                     value={b.seats}
                     onChange={(e) => handleFieldChange(e, b, "seats")}
                     className="border border-gray-300 rounded-md p-2 w-full text-black"
@@ -162,22 +196,11 @@ const AllBookings = () => {
                 )}
 
                 <label className="block text-sm font-semibold">Phone:</label>
-                {editingBooking?.id === b.id ? (
-                  <input
-                    type="tel"
-                    value={b.phone}
-                    onChange={(e) => handleFieldChange(e, b, "phone")}
-                    className="border border-gray-300 rounded-md p-2 w-full text-black"
-                  />
-                ) : (
-                  <p className="flex items-center gap-2">
-                    <FaPhone /> {b.phone}
-                  </p>
-                )}
-
-                <p className="text-lg font-semibold text-green-200">
-                  💰 R {b.price}
+                <p className="flex items-center gap-2">
+                  <FaPhone /> {b.phone}
                 </p>
+
+                <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
 
                 <p className="flex items-center gap-2 text-sm">
                   <FaEnvelope /> {b.email}
@@ -200,12 +223,21 @@ const AllBookings = () => {
                     Update & Pay
                   </button>
                 ) : (
-                  <button
-                    onClick={() => handleEdit(b)}
-                    className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                  >
-                    Edit
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleEdit(b)}
+                      className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteBooking(b.id)}
+                      className="flex-1 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
+                    >
+                      <FaTrash className="inline mr-2" /> Delete
+                    </button>
+                  </>
                 )}
               </div>
             </div>
