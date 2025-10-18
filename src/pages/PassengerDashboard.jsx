@@ -94,30 +94,70 @@ const PassengerDashboard = () => {
     setSeatsSelection((prev) => ({ ...prev, [shuttleId]: Number(seats) }));
   };
 
-  const savePayment = async (shuttle, seats) => {
-    try {
-      const paymentData = {
-        passenger_name: user.name,
-        passenger_phone: user.phone || "",
-        shuttle_id: shuttle.id,
-        booking_id: Math.floor(Math.random() * 1000000),
-        seats,
-        amount: shuttle.price * seats,
-        status: "Paid",
-        payment_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        car: DEFAULT_CAR.name,
-      };
+const savePayment = async (shuttle, seats) => {
+  try {
+    // 🧠 Get logged-in user from localStorage
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const user = storedUser || { name: "Guest", email: "guest@example.com", phone: "" };
 
-      await fetch(`${BASE_URL}/api/payments/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(paymentData),
-      });
-    } catch (err) {
-      console.error("Payment save error:", err.message);
+    // 💾 Calculate total price
+    const totalAmount = shuttle.price * seats;
+    localStorage.setItem("shuttlePrice", totalAmount);
+
+    // 💳 Prepare payment data for backend
+    const paymentData = {
+      passenger_name: user.name,
+      passenger_email: user.email,
+      passenger_phone: user.phone || "",
+      shuttle_id: shuttle.id,
+      booking_id: Math.floor(Math.random() * 1000000),
+      seats,
+      amount: totalAmount,
+      status: "Pending", // will be updated on Stripe webhook or success page
+      payment_date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      car: shuttle.car_name || "Default Shuttle",
+    };
+
+    // 🧾 Save payment info to backend
+    const response = await fetch(`${BASE_URL}/api/payments/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save payment to backend.");
     }
-  };
+
+    console.log("Payment saved to backend:", paymentData);
+
+    // 💥 Initialize Stripe client
+    const stripe = window.Stripe(
+      "pk_test_51RL7bvQjCxIUnFiQRkpYNpspMuE5YHE0p7RVZNPnYpyy3FXj6BtR44ujOUCqX6JSp1jQF5qPpD8i9gi2ZyIilClp00vhwZpk94"
+    );
+
+    // 💳 Redirect to Stripe Checkout
+    await stripe.redirectToCheckout({
+      lineItems: [
+        {
+          // ⚠️ Replace this with your actual price ID from Stripe Dashboard
+          price: "price_1RL7evQjCxIUnFiQKQ2Tzxxxx",
+          quantity: seats,
+        },
+      ],
+      mode: "payment",
+      customerEmail: user.email, // 👈 Stripe sends the receipt
+      successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${window.location.origin}/cancel`,
+    });
+
+    console.log("Redirecting to Stripe Checkout...");
+  } catch (err) {
+    console.error("Payment save or redirect error:", err.message);
+    alert("Payment failed. Please try again.");
+  }
+};
 
   const requestUserLocation = async () => {
     return new Promise((resolve) => {
