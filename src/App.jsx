@@ -11,6 +11,9 @@ import AdminDashboard from "./pages/AdminDashBoard";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Location from "./pages/location"; // ✅ Fixed import name
+import Success from "./pages/Success";
+import Cancel from "./pages/Cancel";
+
 
 function App() {
   return (
@@ -22,12 +25,14 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
-            <Route path="/passenger" element={<PassengerDashboard />} />
+             <Route path="/passenger" element={<PassengerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/login" element={<Login />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/location" element={<Location />} /> {/* ✅ Added route */}
+            <Route path="/success" element={<Success />} />
+            <Route path="/cancel" element={<Cancel />} />
           </Routes>
         </main>
 
