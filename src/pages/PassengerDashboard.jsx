@@ -41,6 +41,18 @@ const PassengerDashboard = () => {
         { lat: -33.9249, lng: 18.4241 },
       ],
     },
+        {
+      id: 3,
+      route: "Johannesburg → Cape Town",
+      date: "2025-10-05",
+      time: "22:36",
+      price: 100,
+      car: DEFAULT_CAR,
+      path: [
+        { lat: -25.7479, lng: 28.2293 },
+        { lat: -33.9249, lng: 18.4241 },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -53,7 +65,7 @@ const PassengerDashboard = () => {
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/api/shuttles`);
+        const res = await fetch(`/api/shuttles`);
         if (!res.ok) throw new Error("Failed to fetch shuttles");
         const data = await res.json();
         const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
@@ -188,30 +200,32 @@ const handleBooking = async (shuttle) => {
   localStorage.setItem("user", JSON.stringify(user));
 
   try {
-    // Send booking to your API without token
-    const response = await fetch("http://localhost:3001/bookings", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(newBooking),
-});
-
+    // Send booking to production API
+    const response = await fetch(`${BASE_URL}/api/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newBooking),
+    });
 
     const result = await response.json();
 
     if (!result.success) {
       console.error("API Booking failed:", result);
-      alert("Booking could not be saved to the server!");
+      // Continue anyway, booking is saved locally
+    } else {
+      // Proceed with Stripe payment if API succeeds
+      await savePayment(shuttle, seats);
+      window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
+      alert("Booking saved! Redirecting to payment...");
       return;
     }
-
-    // Proceed with Stripe payment
-    await savePayment(shuttle, seats);
-    window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
-    alert("Booking saved! Redirecting to payment...");
   } catch (err) {
     console.error("Error sending booking to API:", err);
-    alert("An error occurred while saving booking to API.");
+    // Continue anyway, booking is saved locally
   }
+
+  // If API fails or payment fails, still confirm booking locally
+  alert("Booking saved locally! Payment can be completed later.");
 };
 
 
@@ -219,7 +233,7 @@ const handleBooking = async (shuttle) => {
     <div className="flex flex-col md:flex-row h-screen w-screen bg-gray-100 text-black overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl fixed md:relative z-50 md:z-auto md:flex md:w-64 h-full transition-transform transform ${
+        className={`bg-gray-900 text-white flex flex-col flex-shrink-0 shadow-xl fixed md:relative z-50 md:z-auto md:flex w-64 h-full transition-transform transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -270,23 +284,23 @@ const handleBooking = async (shuttle) => {
 
       </aside>
 
-      {/* Overlay for small screens */}
+      {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6 w-full">
-        {/* Hamburger for small screens */}
+        {/* Hamburger Menu Button */}
         <button
-  className="md:hidden bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-white px-4 py-2 rounded-lg font-bold mb-4 self-start shadow-lg hover:scale-105 transition-transform duration-300"
-  onClick={() => setSidebarOpen(true)}
->
-  ☰ Menu
-</button>
+          className="bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-white px-4 py-2 rounded-lg font-bold mb-4 self-start shadow-lg hover:scale-105 transition-transform duration-300"
+          onClick={() => setSidebarOpen(true)}
+        >
+          ☰ Menu
+        </button>
 
 {activeTab === "book" && (
   <section className="space-y-6">
@@ -294,86 +308,91 @@ const handleBooking = async (shuttle) => {
       🚍 Available Shuttles
     </h2>
 
-    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Pick-up at Home Card */}
+    <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-lg p-3 flex items-center gap-2 mb-4">
+      🚐 <span>Shuttle picks you up at your home and drops you at your destination.</span>
+    </div>
+
+    {/* Shuttle List Container */}
+    <div className="flex flex-col space-y-4 bg-white p-4 rounded-lg shadow-md">
       {shuttles.map((shuttle) => {
         const seats = seatsSelection[shuttle.id] || 1;
-        const price = Number(shuttle.price) || 0;
+        const price = Number(shuttle.price) || 300; // Default to 300 as per example
 
-        // Standardize route parts (split by "->")
-        const routeParts = shuttle.route ? shuttle.route.split("->") : ["Route not available"];
+        // Parse route: assume "From → To"
+        const [from, to] = shuttle.route ? shuttle.route.split("→").map(s => s.trim()) : ["17 Thabo Mbeki St, Polokwane", "Pretoria Luxury Coach Terminal"];
+
+        // Assume departure time, calculate arrival (add 4h 5m)
+        const depTime = shuttle.time || "9:35am";
+        const arrTime = "1:40pm"; // Placeholder, in real app calculate
+
+        // Duration
+        const duration = "4h 5m";
+
+        // Company
+        const company = "CITILINER PLUS";
 
         return (
           <div
             key={shuttle.id}
-            className="bg-gradient-to-r from-red-400 via-pink-500 to-purple-500 rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all duration-500 text-white space-y-3"
+            className="bg-white border border-gray-200 rounded-lg p-2 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 w-full"
           >
-            {/* Route Display with Animated Arrows */}
-            <div className="flex flex-col items-center text-center mb-3">
-              {routeParts.map((city, index) => (
-                <React.Fragment key={index}>
-                  <h3 className="text-xl font-bold">{city.trim()}</h3>
-                  {index < routeParts.length - 1 && (
-                    <div className="text-yellow-300 text-3xl animate-bounce mt-1 mb-1">➡️</div>
-                  )}
-                </React.Fragment>
-              ))}
+            {/* Top: Company Logo + Name */}
+            <div className="flex items-center gap-1 mb-1">
+              <img src="/src/assets/react.svg" alt="Logo" className="w-4 h-4" /> {/* Placeholder logo */}
+              <span className="font-semibold text-gray-800 text-sm">{company}</span>
             </div>
 
-            {/* Shuttle Details */}
-            <div className="space-y-1 text-white text-sm">
-              <p>
-                <span className="font-semibold">🕒 Departure:</span> {shuttle.date || "N/A"} • {shuttle.time || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold">💰 Price per Seat:</span>{" "}
-                <span className="font-bold text-lg">R{price.toFixed(2)}</span>
-              </p>
-              <p>
-                <span className="font-semibold">⏳ Countdown:</span>{" "}
-                <span className="font-mono">{countdowns[shuttle.id] || "N/A"}</span>
-              </p>
-              <p>
-                <span className="font-semibold">🚗 Vehicle:</span> {DEFAULT_CAR.name}
-              </p>
+            {/* Departure and Arrival Times */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-bold text-gray-900">{depTime}</span>
+              <span className="text-gray-500 text-xs">→</span>
+              <span className="text-sm font-bold text-gray-900">{arrTime}</span>
             </div>
 
-            {/* Inputs */}
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className="block font-semibold">🎟️ Seats:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={DEFAULT_CAR.seats}
-                  value={seats}
-                  onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
-                  className="border border-gray-200 rounded-md p-2 w-full text-black"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold">📞 Phone Number:</label>
-                <input
-                  type="tel"
-                  placeholder="Enter phone number"
-                  value={user.phone || ""}
-                  onChange={(e) => setUser({ ...user, phone: e.target.value })}
-                  className="border border-gray-200 rounded-md p-2 w-full text-black"
-                />
+            {/* Departure & Arrival Locations */}
+            <div className="text-xs text-gray-600 mb-1">
+              <p>From: {from}</p>
+              <p>To: {to}</p>
+            </div>
+
+            {/* Transport Type & Duration */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-700">🚌 Bus | {duration}</span>
+              <div className="flex">
+                {Array.from({ length: seats }, (_, i) => <span key={i} className="text-gray-500 text-xs">👤</span>)}
               </div>
             </div>
 
-            {/* Total Price */}
-            <div className="mt-2 font-semibold text-lg">
-              Total: R{(price * seats).toFixed(2)}
+            {/* Price Tag Button */}
+            <div className="flex justify-end mb-1">
+              <button
+                onClick={() => handleBooking(shuttle)}
+                className="bg-orange-500 text-white font-semibold py-1 px-2 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs"
+              >
+                R{price} →
+              </button>
             </div>
 
-            {/* Book Button */}
-            <button
-              onClick={() => handleBooking(shuttle)}
-              className="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white font-bold text-lg py-3 mt-3 rounded-xl shadow-md transform transition-all duration-300 hover:scale-105 hover:from-orange-400 hover:via-red-500 hover:to-pink-600"
-            >
-              🚐 Book & Pay
-            </button>
+            {/* Inputs (minimal) */}
+            <div className="space-y-1 text-xs">
+              <input
+                type="number"
+                min="1"
+                max={DEFAULT_CAR.seats}
+                value={seats}
+                onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
+                className="border border-gray-200 rounded p-1 w-full"
+                placeholder="Seats"
+              />
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={user.phone || ""}
+                onChange={(e) => setUser({ ...user, phone: e.target.value })}
+                className="border border-gray-200 rounded p-1 w-full"
+              />
+            </div>
           </div>
         );
       })}

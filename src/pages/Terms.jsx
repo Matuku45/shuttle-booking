@@ -31,6 +31,7 @@ const Terms = () => {
             <li>Provide accurate booking info. Cancellation fees may apply and are non-refundable.</li>
             <li>No-show: Passengers not ready within 10 minutes may be charged full fare.</li>
             <li>MetroShuttle can suspend accounts for violations or repeated no-shows.</li>
+            <li>NB: The passenger must fall within 20km of diameter of pick city(location) or make extra arrangements.</li>
           </ul>
 
           <h2 className="font-semibold text-lg mt-4">3. Driver Terms</h2>
@@ -51,6 +52,10 @@ const Terms = () => {
 
           <p className="font-medium mt-4">
             By using MetroShuttle, you acknowledge that you have read, understood, and agreed to these Terms.
+          </p>
+
+          <p className="font-medium mt-4">
+            NB: The parcel delivery fee is half the price of the passenger price (<a href="/contact" className="text-blue-600 underline">contact us</a>).
           </p>
         </div>
 

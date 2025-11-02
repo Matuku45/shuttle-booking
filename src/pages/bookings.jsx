@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = "http://localhost:3001"; // Adjust your API base URL
+const BASE_URL = "https://shuttle-booking-system.fly.dev"; // Production API base URL
 
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -14,11 +14,30 @@ const AllBookings = () => {
   // Get logged-in user's email from localStorage
   const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
 
+  // Add one dummy booking for testing
+  useEffect(() => {
+    const dummyBooking = {
+      id: 999999,
+      passengerName: "Test Passenger",
+      email: loggedInEmail || "test@example.com",
+      phone: "0123456789",
+      route: "Pretoria -> Cape Town",
+      date: "2025-10-05",
+      time: "22:36",
+      seats: 1,
+      price: 100,
+      car: "MetroShuttle Bus <c1234555666>",
+      from: "Pretoria",
+      to: "Cape Town",
+    };
+    setBookings((prev) => [dummyBooking, ...prev]);
+  }, [loggedInEmail]);
+
   // Fetch bookings from API
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/bookings`);
+        const res = await fetch(`${BASE_URL}/api/bookings`);
         const data = await res.json();
 
         if (data.success && Array.isArray(data.bookings)) {
@@ -30,13 +49,10 @@ const AllBookings = () => {
               from: b.route?.split(" -> ")[0] || "",
               to: b.route?.split(" -> ")[1] || "",
             }));
-          setBookings(filteredBookings);
-        } else {
-          setBookings([]);
+          setBookings((prev) => [...prev, ...filteredBookings]); // Append API bookings after dummy
         }
       } catch (err) {
         console.error("Error fetching bookings:", err);
-        setBookings([]);
       } finally {
         setLoading(false);
       }
@@ -44,7 +60,6 @@ const AllBookings = () => {
 
     if (loggedInEmail) fetchBookings();
     else {
-      setBookings([]);
       setLoading(false);
     }
   }, [loggedInEmail]);
@@ -88,7 +103,7 @@ const AllBookings = () => {
         price: Number(booking.seats) * 75, // Example: dynamic pricing
       };
 
-      const res = await fetch(`${BASE_URL}/bookings/${booking.id}`, {
+      const res = await fetch(`${BASE_URL}/api/bookings/${booking.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedBooking),

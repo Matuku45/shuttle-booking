@@ -5,10 +5,29 @@ const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Add a dummy booking for testing
+  useEffect(() => {
+    const dummyBooking = {
+      id: 999999,
+      passengerName: "Test Passenger",
+      email: "test@example.com",
+      phone: "0123456789",
+      route: "Pretoria -> Cape Town",
+      date: "2025-10-05",
+      time: "22:36",
+      seats: 1,
+      price: 100,
+      car: "MetroShuttle Bus <c1234555666>",
+      from: "Pretoria",
+      to: "Cape Town",
+    };
+    setBookings((prev) => [dummyBooking, ...prev]);
+  }, []);
+
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await fetch("http://localhost:3001/bookings");
+        const response = await fetch("https://shuttle-booking-system.fly.dev/api/bookings");
         const data = await response.json();
 
         if (data.success && Array.isArray(data.bookings)) {
