@@ -6,7 +6,26 @@ import Shuttle from "../components/imgs/flight.jpg";
 import Logo from "../components/imgs/logo.jpg";
 import { useNavigate } from "react-router-dom";
 
-const images = [img1, img2, img3];
+const slides = [
+  {
+    img: img1,
+    title: "Connecting Cities, Empowering Journeys",
+    description:
+      "MetroShuttle connects major cities across the country with comfortable, affordable, and reliable shuttle services. Whether you’re traveling for work, study, or family visits, we make intercity travel simpler than ever.",
+  },
+  {
+    img: img2,
+    title: "Smart, Secure & On Time",
+    description:
+      "With real-time GPS tracking, verified drivers, and a commitment to passenger safety, MetroShuttle ensures your trip is smooth, predictable, and on schedule—every single time.",
+  },
+  {
+    img: img3,
+    title: "Travel Made Easy — Anytime, Anywhere",
+    description:
+      "Book your ride online in seconds, choose your departure city, and get instant confirmation. Our system ensures flexible scheduling, cashless payments, and dependable city-to-city connections.",
+  },
+];
 
 const Home = () => {
   const [current, setCurrent] = useState(0);
@@ -14,8 +33,8 @@ const Home = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCurrent((prev) => (prev + 1) % images.length);
-    }, 4000);
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, 5000);
     return () => clearTimeout(timer);
   }, [current]);
 
@@ -40,11 +59,15 @@ const Home = () => {
               CLICK YOUR NEXT <br />
               <span className="text-[#ff6b00]">RIDE</span>
             </h2>
-            <p className="text-white/80 text-lg md:text-xl">
+            <p className="text-white/80 text-lg md:text-xl leading-relaxed">
               Quick. Easy. Simple. Book your metro shuttle today with{" "}
               <span className="text-[#ff6b00] font-semibold">
                 immediate confirmation.
               </span>
+              <br />
+              MetroShuttle is your all-in-one city-to-city transport solution —
+              designed for students, professionals, and families. Enjoy comfort,
+              safety, and modern convenience wherever you travel.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
@@ -76,27 +99,61 @@ const Home = () => {
       </section>
 
       {/* Carousel Section */}
-      <section className="w-full max-w-4xl py-16 px-6">
-        <img
-          src={images[current]}
-          alt="Shuttle"
-          className="w-full h-72 md:h-96 object-cover rounded-2xl shadow-lg"
-        />
-        <div className="flex justify-center mt-4 gap-2">
-          {images.map((_, i) => (
+      <section className="w-full max-w-6xl py-16 px-6 relative">
+        <div className="relative rounded-3xl overflow-hidden shadow-lg">
+          <img
+            src={slides[current].img}
+            alt={slides[current].title}
+            className="w-full h-[400px] md:h-[500px] object-cover transition-all duration-1000 ease-in-out"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-10 text-white">
+            <h3 className="text-3xl md:text-4xl font-bold mb-3 text-[#ff6b00]">
+              {slides[current].title}
+            </h3>
+            <p className="text-lg md:text-xl max-w-3xl text-gray-100 leading-relaxed">
+              {slides[current].description}
+            </p>
+            <button
+              onClick={() => navigate("/booking")}
+              className="mt-6 w-fit bg-[#ff6b00] text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-white hover:text-[#0f1b2a] transition"
+            >
+              Book Your Shuttle
+            </button>
+          </div>
+        </div>
+
+        {/* Dots */}
+        <div className="flex justify-center mt-6 gap-3">
+          {slides.map((_, i) => (
             <span
               key={i}
-              className={`w-3 h-3 rounded-full ${
-                i === current ? "bg-[#ff6b00]" : "bg-gray-300"
-              } transition-all`}
+              onClick={() => setCurrent(i)}
+              className={`w-4 h-4 rounded-full cursor-pointer transition-all ${
+                i === current ? "bg-[#ff6b00] scale-110" : "bg-gray-300"
+              }`}
             />
           ))}
         </div>
       </section>
 
+      {/* Extra Info Section */}
+      <section className="w-full bg-gray-50 py-20 text-center px-6">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0f1b2a] mb-6">
+          Why Choose MetroShuttle?
+        </h2>
+        <p className="max-w-3xl mx-auto text-gray-600 text-lg leading-relaxed">
+          We are redefining the way people travel between cities — no queues, no
+          paper tickets, no uncertainty. MetroShuttle offers a fully digital
+          experience with online booking, route visibility, affordable fares,
+          and dedicated customer support. Whether it’s Johannesburg to Pretoria,
+          Durban to Pietermaritzburg, or anywhere across South Africa, we’re
+          here to move you — safely and comfortably.
+        </p>
+      </section>
+
       {/* Footer */}
       <footer className="w-full py-6 bg-gray-100 text-center text-gray-700 border-t border-gray-200">
-        © 2025 MetroShuttle — Designed for smart mobility
+        © 2025 MetroShuttle — Connecting Cities. Empowering Mobility.
       </footer>
     </div>
   );
