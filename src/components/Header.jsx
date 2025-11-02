@@ -1,88 +1,70 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Logo from "../components/imgs/logo.jpg"; // <-- replace with your actual logo path
 
-const Header = () => {
+const Header = ({ onSignUpClick, onLoginClick }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
-    { name: "Sell My Car", path: "/sell" },
-    { name: "Buy a Car", path: "/buy" },
-    { name: "Finance & Services", path: "/finance" },
-    { name: "Our Locations", path: "/locations" },
+    { name: "Home", path: "/" },
     { name: "About", path: "/about" },
-    { name: "Contact Us", path: "/contact" },
-    { name: "Investors", path: "/investors" },
+    { name: "Sign Up", path: "/signup" },
+    { name: "Login", path: "/login" },
   ];
 
   return (
-    <header className="w-full bg-white text-gray-800 border-b border-gray-200 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-3">
-        {/* Left side: Logo */}
-        <div className="flex items-center gap-3">
-          <img
-            src={Logo}
-            alt="MetroShuttle Logo"
-            className="w-10 h-10 object-contain"
-          />
-          <h1 className="text-xl font-extrabold text-gray-900 tracking-wide">
-            metro<span className="text-[#ff6b00]">shuttle.co.za</span>
-          </h1>
+    <header className="w-full bg-blue-900 text-white shadow sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-3 sm:px-6">
+        <div className="text-xl sm:text-2xl font-bold tracking-wide">
+          metroshuttle.coza
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+        {/* Desktop navigation */}
+        <nav className="hidden md:flex items-center gap-4">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className="hover:text-[#ff6b00] transition-colors"
+              className="px-3 py-1 font-medium hover:underline text-yellow-300"
             >
               {item.name}
             </Link>
           ))}
-          <Link
-            to="/signup"
-            className="text-[#ff6b00] font-semibold hover:underline ml-4"
-          >
-            Sign Up
-          </Link>
         </nav>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-3xl text-[#ff6b00] focus:outline-none"
-        >
-          {mobileOpen ? "✕" : "☰"}
-        </button>
+        {/* Mobile menu toggle */}
+     <div className="md:hidden flex items-center justify-end">
+  <button
+    onClick={() => setMobileOpen(!mobileOpen)}
+    className={`text-3xl font-bold focus:outline-none transition-all duration-300 transform 
+      bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 
+      bg-clip-text text-transparent 
+      hover:scale-110 active:scale-95`}
+  >
+    {mobileOpen ? (
+      <span className="transition-opacity duration-300 opacity-100">✕</span>
+    ) : (
+      <span className="transition-opacity duration-300 opacity-100">☰</span>
+    )}
+  </button>
+</div>
+
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile navigation */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 shadow-inner flex flex-col px-6 py-3 space-y-2 text-sm font-medium">
+        <div className="md:hidden flex flex-col bg-blue-800 px-4 py-2 gap-2">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              className="hover:text-[#ff6b00] transition-colors"
+              className="block w-full text-left text-yellow-300 font-medium hover:underline px-2 py-1"
             >
               {item.name}
             </Link>
           ))}
-          <Link
-            to="/signup"
-            onClick={() => setMobileOpen(false)}
-            className="text-[#ff6b00] font-semibold hover:underline"
-          >
-            Sign Up
-          </Link>
         </div>
       )}
-
-      {/* Bottom dark-blue bar (like in image) */}
-      <div className="w-full bg-[#0f1b2a] h-4"></div>
     </header>
   );
 };
