@@ -5,6 +5,7 @@ const LocationPage = () => {
     "https://graphhopper.com/maps/?point=-23.8916%2C29.8772_Current+Location&point=-23.9050%2C29.8900&profile=car&layer=Omnisc"
   );
   const [coordinates, setCoordinates] = useState([]);
+  const [addresses, setAddresses] = useState([]);
   const [directions, setDirections] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,8 +36,26 @@ const LocationPage = () => {
       setCoordinates(parsedCoords);
       setLoading(true);
 
-      // ✅ Fetch route directions from GraphHopper API
+      // ✅ Fetch addresses for coordinates using reverse geocoding
       const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY;
+      const addressPromises = parsedCoords.map(async ([lat, lon]) => {
+        const geocodeUrl = `https://graphhopper.com/api/1/geocode?q=${lat},${lon}&locale=en&key=${apiKey}`;
+        const response = await fetch(geocodeUrl);
+        const data = await response.json();
+        if (data.hits && data.hits.length > 0) {
+          const hit = data.hits[0];
+          return {
+            city: hit.city || hit.name || "Unknown City",
+            address: hit.name || "Unknown Address"
+          };
+        }
+        return { city: "Unknown City", address: "Unknown Address" };
+      });
+
+      const fetchedAddresses = await Promise.all(addressPromises);
+      setAddresses(fetchedAddresses);
+
+      // ✅ Fetch route directions from GraphHopper API
       const apiUrl = `https://graphhopper.com/api/1/route?point=${parsedCoords[0][0]},${parsedCoords[0][1]}&point=${parsedCoords[1][0]},${parsedCoords[1][1]}&vehicle=car&locale=en&points_encoded=false&key=${apiKey}`;
 
       const response = await fetch(apiUrl);
