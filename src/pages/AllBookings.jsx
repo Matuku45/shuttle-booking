@@ -8,7 +8,7 @@ const AllBookings = () => {
   // Add a dummy booking for testing
   useEffect(() => {
     const dummyBooking = {
-      id: 999999,
+      id: -1,
       passengerName: "Test Passenger",
       email: "test@example.com",
       phone: "0123456789",

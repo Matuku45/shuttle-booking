@@ -14,6 +14,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [user] = useState({
     username: "Admin",
@@ -148,8 +149,14 @@ const AdminDashboard = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-gray-900 text-white flex flex-col shadow-lg flex-shrink-0">
-        <div className="flex flex-col items-center justify-center h-24 border-b border-gray-700">
+      <aside className={`w-full md:w-64 bg-gray-900 text-white flex flex-col shadow-lg flex-shrink-0 fixed md:relative top-0 left-0 h-full z-40 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300`}>
+        <div className="flex flex-col items-center justify-center h-24 border-b border-gray-700 relative">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden absolute top-2 right-2 text-white hover:text-gray-300 text-xl font-bold"
+          >
+            ✕
+          </button>
           <div className="w-14 h-14 rounded-full bg-yellow-400 flex items-center justify-center text-lg font-bold text-black shadow">
             {user.username[0].toUpperCase()}
           </div>
@@ -167,7 +174,10 @@ const AdminDashboard = () => {
   ].map((btn) => (
     <button
       key={btn.key}
-      onClick={() => setActiveTab(btn.key)}
+      onClick={() => {
+        setActiveTab(btn.key);
+        setSidebarOpen(false); // Close sidebar on mobile after selection
+      }}
       className={`w-full text-left px-4 py-2 rounded-lg font-semibold shadow-md transition
         ${
           activeTab === btn.key
@@ -178,7 +188,7 @@ const AdminDashboard = () => {
       {btn.label}
     </button>
   ))}
-  
+
   <a
     href="/login"
     className="block text-center bg-gradient-to-r from-red-400 via-red-500 to-red-600 py-2 rounded-lg font-bold mt-6 text-white shadow-md hover:brightness-110 transition"
@@ -193,8 +203,22 @@ const AdminDashboard = () => {
         </footer>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 md:ml-0">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="mb-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-gray-800 transition"
+        >
+          ☰ Menu
+        </button>
         {loading ? <p className="text-center mt-10">Loading...</p> : renderTab()}
       </main>
     </div>
