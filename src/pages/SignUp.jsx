@@ -48,7 +48,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/users/create", {
+      const response = await fetch("https://shuttle-booking-system.fly.dev/users/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
