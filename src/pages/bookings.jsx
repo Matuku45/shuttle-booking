@@ -14,6 +14,19 @@ const AllBookings = () => {
   // Get logged-in user's email from localStorage
   const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
 
+  // Load bookings from localStorage (created in PassengerDashboard)
+  useEffect(() => {
+    const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    const filteredLocalBookings = localBookings
+      .filter((b) => b.email?.toLowerCase() === loggedInEmail)
+      .map((b) => ({
+        ...b,
+        from: b.route?.split(" → ")[0] || "",
+        to: b.route?.split(" → ")[1] || "",
+      }));
+    setBookings((prev) => [...prev, ...filteredLocalBookings]);
+  }, [loggedInEmail]);
+
   // Add one dummy booking for testing
   useEffect(() => {
     const dummyBooking = {
