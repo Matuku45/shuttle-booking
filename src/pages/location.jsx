@@ -12,6 +12,7 @@ const LocationPage = () => {
   const [directions, setDirections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [path, setPath] = useState("");
 
   // ✅ Extract coordinates & fetch directions
   const handleExtractAndDirections = async () => {
@@ -79,9 +80,12 @@ const LocationPage = () => {
 
       setDirections(instructions);
 
+      // ✅ Create path string from directions
+      const pathString = instructions.map(step => step.text).join(" -> ");
+      setPath(pathString);
+
       // ✅ Send directions to backend API
       if (email && addresses.length > 0) {
-        const path = `${addresses[0].city} -> ${addresses[addresses.length - 1].city}`;
         try {
           const backendResponse = await fetch('https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/directions', {
             method: 'POST',
@@ -90,7 +94,7 @@ const LocationPage = () => {
             },
             body: JSON.stringify({
               email: email,
-              path: path,
+              path: pathString,
             }),
           });
           const backendData = await backendResponse.json();
@@ -121,7 +125,6 @@ const LocationPage = () => {
     }
 
     setSaving(true);
-    const path = `${addresses[0].city} -> ${addresses[addresses.length - 1].city}`;
     try {
       const response = await fetch('https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/directions', {
         method: 'POST',
