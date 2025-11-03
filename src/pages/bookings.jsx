@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = "https://shuttle-booking-system.fly.dev"; // Production API base URL
+const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev"; // Production API base URL for bookings
 
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);

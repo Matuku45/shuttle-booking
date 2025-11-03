@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const BASE_URL = "https://shuttle-booking-system.fly.dev/api/payments";
+const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/payments";
 
 export default function TrackPayment({ passengerName, refreshTrigger }) {
   const [payments, setPayments] = useState([]);

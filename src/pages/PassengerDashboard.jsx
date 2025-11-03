@@ -161,9 +161,6 @@ const PassengerDashboard = () => {
 const handleBooking = async (shuttle) => {
   const seats = seatsSelection[shuttle.id] || 1;
 
-  if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
-  if (!user.email || !user.email.trim()) return alert("User email not found!");
-
   // Get user location if needed
   await requestUserLocation();
 
