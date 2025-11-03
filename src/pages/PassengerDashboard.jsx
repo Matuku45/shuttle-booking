@@ -197,49 +197,41 @@ const handleBooking = async (shuttle) => {
       body: JSON.stringify(newBooking),
     });
 
-    const result = await response.json();
+    // If backend fails (like 404), still continue
+    if (!response.ok) {
+      console.warn("Booking API error:", response.status);
+      throw new Error("Booking API failed");
+    }
 
+    const result = await response.json();
     if (!result.success) {
-      throw new Error("API Booking failed");
+      throw new Error("Booking failed at API");
     }
 
     setBookingProgress(50);
-
-    // Save booking locally
-    const updatedBookings = [...bookings, newBooking];
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    localStorage.setItem("user", JSON.stringify(user));
-
-    setBookingProgress(70);
-
-    try {
-      await savePayment(shuttle, seats);
-      setBookingProgress(100);
-
-      // ✅ Redirect to Stripe payment gateway
-      setTimeout(() => {
-        window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-      }, 1000);
-    } catch (paymentErr) {
-      console.error("Payment save error:", paymentErr.message);
-      alert("Booking saved, but payment failed. Please try again.");
-    }
   } catch (err) {
-    console.error("Error sending booking to API:", err);
-
-    // Save locally if API fails
+    console.error("Error sending booking to API:", err.message);
+    alert("Booking API not available, saving locally and proceeding to payment...");
+  } finally {
+    // ✅ Always save booking locally
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
     localStorage.setItem("user", JSON.stringify(user));
 
-    alert("Booking saved locally! Payment can be completed later.");
-  } finally {
+    setBookingProgress(100);
+
+    // ✅ Always redirect to Stripe payment gateway automatically
+    setTimeout(() => {
+      window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+    }, 1000);
+
+    // Reset UI
     setBookingLoading(false);
     setBookingProgress(0);
   }
 };
+
 
 
   return (
