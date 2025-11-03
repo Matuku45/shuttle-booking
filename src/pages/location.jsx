@@ -39,7 +39,7 @@ const LocationPage = () => {
       // ✅ Fetch addresses for coordinates using reverse geocoding
       const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY;
       const addressPromises = parsedCoords.map(async ([lat, lon]) => {
-        const geocodeUrl = `https://graphhopper.com/api/1/geocode?q=${lat},${lon}&locale=en&key=${apiKey}`;
+        const geocodeUrl = `https://graphhopper.com/api/1/geocode?point=${lat},${lon}&reverse=true&locale=en&key=${apiKey}`;
         const response = await fetch(geocodeUrl);
         const data = await response.json();
         if (data.hits && data.hits.length > 0) {
@@ -130,18 +130,41 @@ const LocationPage = () => {
 
       {/* ✅ Coordinates */}
       {coordinates.length > 0 && (
-        <div className="mt-6 bg-white shadow-md rounded-xl p-4 w-full max-w-xl">
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">
-            📌 Extracted Coordinates
+        <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-100 shadow-lg rounded-2xl p-6 w-full max-w-xl border border-blue-200">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <span className="text-3xl mr-2">📌</span> Extracted Coordinates & Locations
           </h3>
-          <ul className="list-disc ml-6 text-gray-700">
+          <div className="space-y-4">
             {coordinates.map(([lat, lon], idx) => (
-              <li key={idx}>
-                <strong>Point {idx + 1}:</strong> Latitude {lat}, Longitude{" "}
-                {lon}
-              </li>
+              <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500">
+                <div className="flex items-center mb-2">
+                  <span className="text-lg font-semibold text-blue-600">Point {idx + 1}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center">
+                    <span className="text-gray-600 mr-2">📍</span>
+                    <span><strong>Latitude:</strong> {lat}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-600 mr-2">📍</span>
+                    <span><strong>Longitude:</strong> {lon}</span>
+                  </div>
+                  {addresses[idx] && (
+                    <>
+                      <div className="flex items-center col-span-1 md:col-span-2">
+                        <span className="text-gray-600 mr-2">🏙️</span>
+                        <span><strong>City:</strong> {addresses[idx].city}</span>
+                      </div>
+                      <div className="flex items-center col-span-1 md:col-span-2">
+                        <span className="text-gray-600 mr-2">🏠</span>
+                        <span><strong>Address:</strong> {addresses[idx].address}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
