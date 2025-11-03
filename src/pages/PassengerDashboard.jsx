@@ -161,6 +161,9 @@ const PassengerDashboard = () => {
 const handleBooking = async (shuttle) => {
   const seats = seatsSelection[shuttle.id] || 1;
 
+  if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
+  if (!user.email || !user.email.trim()) return alert("User email not found!");
+
   // Get user location if needed
   await requestUserLocation();
 
@@ -179,14 +182,8 @@ const handleBooking = async (shuttle) => {
     car: DEFAULT_CAR.name,
   };
 
-  // Save locally as before
-  const updatedBookings = [...bookings, newBooking];
-  setBookings(updatedBookings);
-  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-  localStorage.setItem("user", JSON.stringify(user));
-
   try {
-    // Send booking to production API
+    // Send booking to production API first
     const response = await fetch(`${PAYMENT_BASE}/api/bookings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -196,22 +193,33 @@ const handleBooking = async (shuttle) => {
     const result = await response.json();
 
     if (!result.success) {
-      console.error("API Booking failed:", result);
-      // Continue anyway, booking is saved locally
-    } else {
-      // Proceed with Stripe payment if API succeeds
+      throw new Error("API Booking failed");
+    }
+
+    // If booking succeeds, save locally
+    const updatedBookings = [...bookings, newBooking];
+    setBookings(updatedBookings);
+    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    localStorage.setItem("user", JSON.stringify(user));
+
+    // Proceed with payment
+    try {
       await savePayment(shuttle, seats);
       window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
       alert("Booking saved! Redirecting to payment...");
-      return;
+    } catch (paymentErr) {
+      console.error("Payment save error:", paymentErr.message);
+      alert("Booking saved, but payment failed. Please try again.");
     }
   } catch (err) {
     console.error("Error sending booking to API:", err);
-    // Continue anyway, booking is saved locally
+    // If API fails, save locally
+    const updatedBookings = [...bookings, newBooking];
+    setBookings(updatedBookings);
+    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    localStorage.setItem("user", JSON.stringify(user));
+    alert("Booking saved locally! Payment can be completed later.");
   }
-
-  // If API fails or payment fails, still confirm booking locally
-  alert("Booking saved locally! Payment can be completed later.");
 };
 
 
