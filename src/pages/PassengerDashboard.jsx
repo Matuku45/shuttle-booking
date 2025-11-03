@@ -15,7 +15,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const BASE_URL = "https://shuttle-booking-system.fly.dev";
+const SHUTTLE_BASE = "https://shuttle-booking-system.fly.dev";
+const PAYMENT_BASE = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
 const DEFAULT_CAR = { name: "MetroShuttle Bus <c1234555666>", seats: 10 };
 
 const PassengerDashboard = () => {
@@ -29,35 +30,16 @@ const PassengerDashboard = () => {
   const [userLocation, setUserLocation] = useState(null);
 
   const defaultShuttles = [
-    {
-      id: 1,
-      route: "Pretoria → Cape Town",
-      date: "2025-10-05",
-      time: "22:36",
-      price: 100,
-      car: DEFAULT_CAR,
-      path: [
-        { lat: -25.7479, lng: 28.2293 },
-        { lat: -33.9249, lng: 18.4241 },
-      ],
-    },
-        {
-      id: 3,
-      route: "Johannesburg → Cape Town",
-      date: "2025-10-05",
-      time: "22:36",
-      price: 100,
-      car: DEFAULT_CAR,
-      path: [
-        { lat: -25.7479, lng: 28.2293 },
-        { lat: -33.9249, lng: 18.4241 },
-      ],
-    },
+  
   ];
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser?.name) setUser(storedUser);
+    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+    setUser({
+      name: storedUser.name || "Passenger",
+      email: storedUser.email || "",
+      phone: storedUser.phone || ""
+    });
     const storedBookings = JSON.parse(localStorage.getItem("bookings")) || [];
     setBookings(storedBookings);
   }, []);
@@ -65,13 +47,20 @@ const PassengerDashboard = () => {
   useEffect(() => {
     const fetchShuttles = async () => {
       try {
-        const res = await fetch(`/api/shuttles`);
+        const res = await fetch(`${SHUTTLE_BASE}/api/shuttles`);
         if (!res.ok) throw new Error("Failed to fetch shuttles");
         const data = await res.json();
         const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
+        // Sort admin-added shuttles first by updated_at descending, then by date/time
+        const sortedShuttles = shuttlesData.sort((a, b) => {
+          if (a.updated_at && b.updated_at) {
+            return new Date(b.updated_at) - new Date(a.updated_at);
+          }
+          return new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time);
+        });
         setShuttles(
-          shuttlesData.length
-            ? shuttlesData.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
+          sortedShuttles.length
+            ? sortedShuttles.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
             : defaultShuttles
         );
       } catch (err) {
@@ -121,7 +110,7 @@ const PassengerDashboard = () => {
         car: DEFAULT_CAR.name,
       };
 
-      await fetch(`${BASE_URL}/api/payments/create`, {
+      await fetch(`${PAYMENT_BASE}/api/payments/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(paymentData),
@@ -172,8 +161,8 @@ const PassengerDashboard = () => {
 const handleBooking = async (shuttle) => {
   const seats = seatsSelection[shuttle.id] || 1;
 
-  if (!user.phone.trim()) return alert("Enter your phone number!");
-  if (!user.email.trim()) return alert("User email not found!");
+  if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
+  if (!user.email || !user.email.trim()) return alert("User email not found!");
 
   // Get user location if needed
   await requestUserLocation();
@@ -201,7 +190,7 @@ const handleBooking = async (shuttle) => {
 
   try {
     // Send booking to production API
-    const response = await fetch(`${BASE_URL}/api/bookings`, {
+    const response = await fetch(`${PAYMENT_BASE}/api/bookings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newBooking),
