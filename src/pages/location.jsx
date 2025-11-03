@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 
 const LocationPage = () => {
+  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const email = user.email || "user@example.com";
+
   const [graphhopperUrl, setGraphhopperUrl] = useState(
     "https://graphhopper.com/maps/?point=-23.8916%2C29.8772_Current+Location&point=-23.9050%2C29.8900&profile=car&layer=Omnisc"
   );
@@ -8,6 +11,7 @@ const LocationPage = () => {
   const [addresses, setAddresses] = useState([]);
   const [directions, setDirections] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // ✅ Extract coordinates & fetch directions
   const handleExtractAndDirections = async () => {
@@ -74,6 +78,28 @@ const LocationPage = () => {
       }));
 
       setDirections(instructions);
+
+      // ✅ Send directions to backend API
+      if (email && addresses.length > 0) {
+        const path = `${addresses[0].city} -> ${addresses[addresses.length - 1].city}`;
+        try {
+          const backendResponse = await fetch('https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/directions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: email,
+              path: path,
+            }),
+          });
+          const backendData = await backendResponse.json();
+          console.log('Directions saved to backend:', backendData);
+        } catch (backendError) {
+          console.error('Error saving to backend:', backendError);
+        }
+      }
+
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -87,11 +113,46 @@ const LocationPage = () => {
     window.open(graphhopperUrl, "_blank");
   };
 
+  // ✅ Save directions to backend
+  const handleSaveDirections = async () => {
+    if (!email || addresses.length === 0) {
+      alert("Please enter your email and extract directions first.");
+      return;
+    }
+
+    setSaving(true);
+    const path = `${addresses[0].city} -> ${addresses[addresses.length - 1].city}`;
+    try {
+      const response = await fetch('https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/directions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          path: path,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert("Directions saved successfully!");
+      } else {
+        alert("Failed to save directions.");
+      }
+    } catch (error) {
+      console.error('Error saving directions:', error);
+      alert("Error saving directions.");
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="p-6 flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-gray-100">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">
         🚐 Shuttle Route Viewer — GraphHopper API
       </h2>
+
+
 
       {/* ✅ URL input section */}
       <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-xl">
@@ -189,6 +250,15 @@ const LocationPage = () => {
                 </li>
               ))}
             </ol>
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={handleSaveDirections}
+                disabled={saving}
+                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold py-2 px-4 rounded-lg transition transform hover:scale-105"
+              >
+                {saving ? "Saving..." : "💾 Save Directions"}
+              </button>
+            </div>
           </div>
         )
       )}
