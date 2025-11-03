@@ -40,6 +40,7 @@ const Login = ({ onForgotPasswordClick }) => {
         const userInfo = {
           name: data.user.name || data.user.username || form.username,
           email: data.user.email || form.username,
+          phone: data.user.phone || "",
           role: data.user.role || form.role,
         };
         localStorage.setItem("user", JSON.stringify(userInfo));

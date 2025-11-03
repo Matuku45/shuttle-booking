@@ -304,9 +304,35 @@ const handleBooking = async (shuttle) => {
 
 {activeTab === "book" && (
   <section className="space-y-6">
-    <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-wide">
-      🚍 Available Shuttles
-    </h2>
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-3xl font-extrabold text-gray-800 tracking-wide">
+        🚍 Available Shuttles
+      </h2>
+      <button
+        onClick={() => {
+          const fetchShuttles = async () => {
+            try {
+              const res = await fetch(`/api/shuttles`);
+              if (!res.ok) throw new Error("Failed to fetch shuttles");
+              const data = await res.json();
+              const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
+              setShuttles(
+                shuttlesData.length
+                  ? shuttlesData.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
+                  : defaultShuttles
+              );
+            } catch (err) {
+              console.warn("API error, using default shuttles:", err.message);
+              setShuttles(defaultShuttles);
+            }
+          };
+          fetchShuttles();
+        }}
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+      >
+        🔄 Refresh Shuttles
+      </button>
+    </div>
 
     {/* Pick-up at Home Card */}
     <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-lg p-3 flex items-center gap-2 mb-4">
@@ -385,13 +411,7 @@ const handleBooking = async (shuttle) => {
                 className="border border-gray-200 rounded p-1 w-full"
                 placeholder="Seats"
               />
-              <input
-                type="tel"
-                placeholder="Phone"
-                value={user.phone || ""}
-                onChange={(e) => setUser({ ...user, phone: e.target.value })}
-                className="border border-gray-200 rounded p-1 w-full"
-              />
+              {/* Phone is now extracted from localStorage, no input needed */}
             </div>
           </div>
         );
