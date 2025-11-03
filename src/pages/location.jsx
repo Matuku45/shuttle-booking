@@ -36,7 +36,7 @@ const LocationPage = () => {
       setLoading(true);
 
       // ✅ Fetch route directions from GraphHopper API
-      const apiKey = "YOUR_API_KEY_HERE"; // Replace with your GraphHopper key
+      const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY;
       const apiUrl = `https://graphhopper.com/api/1/route?point=${parsedCoords[0][0]},${parsedCoords[0][1]}&point=${parsedCoords[1][0]},${parsedCoords[1][1]}&vehicle=car&locale=en&points_encoded=false&key=${apiKey}`;
 
       const response = await fetch(apiUrl);
