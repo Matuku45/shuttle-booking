@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 
 const SHUTTLE_BASE = "https://shuttle-booking-system.fly.dev";
 const PAYMENT_BASE = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
-const DEFAULT_CAR = { name: "MetroShuttle Bus <c1234555666>", seats: 10 };
+const DEFAULT_CAR = { name: "MetroShuttle Suzuki Car <c1234555666>", seats: 10 };
 
 const PassengerDashboard = () => {
   const [user, setUser] = useState({ name: "Passenger", email: "", phone: "" });
@@ -30,6 +30,7 @@ const PassengerDashboard = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingProgress, setBookingProgress] = useState(0);
+  const [bookingShuttleId, setBookingShuttleId] = useState(null);
 
   const defaultShuttles = [
   
@@ -169,7 +170,6 @@ const handleBooking = async (shuttle) => {
   setBookingLoading(true);
   setBookingProgress(0);
 
-  // Get user location if needed
   setBookingProgress(10);
   await requestUserLocation();
   setBookingProgress(20);
@@ -190,7 +190,6 @@ const handleBooking = async (shuttle) => {
   };
 
   try {
-    // Send booking to production API first
     setBookingProgress(30);
     const response = await fetch(`${PAYMENT_BASE}/api/bookings`, {
       method: "POST",
@@ -205,37 +204,38 @@ const handleBooking = async (shuttle) => {
     }
 
     setBookingProgress(50);
-    // If booking succeeds, save locally
+
+    // Save booking locally
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
     localStorage.setItem("user", JSON.stringify(user));
 
     setBookingProgress(70);
-    // Proceed with payment
+
     try {
       await savePayment(shuttle, seats);
       setBookingProgress(100);
+
+      // ✅ Redirect to Stripe payment gateway
       setTimeout(() => {
-        window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
-        alert("Booking saved! Redirecting to payment...");
-        setBookingLoading(false);
-        setBookingProgress(0);
-      }, 500);
+        window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+      }, 1000);
     } catch (paymentErr) {
       console.error("Payment save error:", paymentErr.message);
       alert("Booking saved, but payment failed. Please try again.");
-      setBookingLoading(false);
-      setBookingProgress(0);
     }
   } catch (err) {
     console.error("Error sending booking to API:", err);
-    // If API fails, save locally
+
+    // Save locally if API fails
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
     localStorage.setItem("user", JSON.stringify(user));
+
     alert("Booking saved locally! Payment can be completed later.");
+  } finally {
     setBookingLoading(false);
     setBookingProgress(0);
   }
