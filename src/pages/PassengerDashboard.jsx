@@ -28,6 +28,8 @@ const PassengerDashboard = () => {
   const [countdowns, setCountdowns] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingProgress, setBookingProgress] = useState(0);
 
   const defaultShuttles = [
   
@@ -164,8 +166,13 @@ const handleBooking = async (shuttle) => {
   if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
   if (!user.email || !user.email.trim()) return alert("User email not found!");
 
+  setBookingLoading(true);
+  setBookingProgress(0);
+
   // Get user location if needed
+  setBookingProgress(10);
   await requestUserLocation();
+  setBookingProgress(20);
 
   const newBooking = {
     id: Math.floor(Math.random() * 1000000),
@@ -184,6 +191,7 @@ const handleBooking = async (shuttle) => {
 
   try {
     // Send booking to production API first
+    setBookingProgress(30);
     const response = await fetch(`${PAYMENT_BASE}/api/bookings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -196,20 +204,29 @@ const handleBooking = async (shuttle) => {
       throw new Error("API Booking failed");
     }
 
+    setBookingProgress(50);
     // If booking succeeds, save locally
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
     localStorage.setItem("user", JSON.stringify(user));
 
+    setBookingProgress(70);
     // Proceed with payment
     try {
       await savePayment(shuttle, seats);
-      window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
-      alert("Booking saved! Redirecting to payment...");
+      setBookingProgress(100);
+      setTimeout(() => {
+        window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
+        alert("Booking saved! Redirecting to payment...");
+        setBookingLoading(false);
+        setBookingProgress(0);
+      }, 500);
     } catch (paymentErr) {
       console.error("Payment save error:", paymentErr.message);
       alert("Booking saved, but payment failed. Please try again.");
+      setBookingLoading(false);
+      setBookingProgress(0);
     }
   } catch (err) {
     console.error("Error sending booking to API:", err);
@@ -219,6 +236,8 @@ const handleBooking = async (shuttle) => {
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
     localStorage.setItem("user", JSON.stringify(user));
     alert("Booking saved locally! Payment can be completed later.");
+    setBookingLoading(false);
+    setBookingProgress(0);
   }
 };
 
@@ -388,11 +407,22 @@ const handleBooking = async (shuttle) => {
             <div className="flex justify-end mb-1">
               <button
                 onClick={() => handleBooking(shuttle)}
-                className="bg-orange-500 text-white font-semibold py-1 px-2 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs"
+                disabled={bookingLoading}
+                className="bg-orange-500 text-white font-semibold py-1 px-2 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs disabled:opacity-50"
               >
-                R{price} →
+                {bookingLoading ? "Booking..." : `R${price} →`}
               </button>
             </div>
+
+            {/* Progress Bar */}
+            {bookingLoading && (
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${bookingProgress}%` }}
+                ></div>
+              </div>
+            )}
 
             {/* Inputs (minimal) */}
             <div className="space-y-1 text-xs">
