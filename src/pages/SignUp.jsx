@@ -1,22 +1,22 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // ✅ import Link
-
-const BASE_URL = "https://shuttle-booking-system.fly.dev";
+import { useNavigate } from "react-router-dom"; // <-- import navigate
 
 const SignUp = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     repeatPassword: "",
     role: "",
     agree: false,
   });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // <-- initialize navigate
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -27,61 +27,78 @@ const SignUp = () => {
     setSuccess("");
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.repeatPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (!form.agree) {
-      setError("You must agree to continue");
+
+    // Basic validation
+    if (!form.name || !form.email || !form.phone || !form.password || !form.repeatPassword || !form.role) {
+      setError("Please fill in all fields.");
       return;
     }
 
-    setLoading(true);
-    setError("");
-    setSuccess("");
+    if (form.password !== form.repeatPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (!form.agree) {
+      setError("You must agree to the Terms of service.");
+      return;
+    }
 
     try {
-      const response = await fetch(`${BASE_URL}/users/create`, {
+      const response = await fetch("http://localhost:3000/users/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
           email: form.email,
+          phone: form.phone,
           password: form.password,
-          role: form.role || "passenger",
+          role: form.role,
         }),
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.message || `Server error: ${response.status}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(data.message);
+        setError("");
+        // Reset form
+        setForm({
+          name: "",
+          email: "",
+          phone: "",
+          password: "",
+          repeatPassword: "",
+          role: "",
+          agree: false,
+        });
+
+        // Redirect to login page after successful signup
+        navigate("/login");
+      } else {
+        setError(data.message || "Something went wrong");
+        setSuccess("");
       }
-
-      setSuccess("Account created successfully!");
-      setForm({
-        name: "",
-        email: "",
-        password: "",
-        repeatPassword: "",
-        role: "",
-        agree: false,
-      });
-
-      setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
-      setError(err.message || "Signup failed. Please try again.");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setError("Server error. Please try again later.");
+      setSuccess("");
     }
   };
 
   return (
-    <div className="h-screen w-screen flex justify-center items-center bg-gradient-to-br from-blue-100 to-blue-200 p-4 overflow-auto">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-10 flex flex-col gap-6">
-        {/* Logo */}
-        <div className="text-center">
+    <section
+      className="min-h-screen flex items-center justify-center bg-cover bg-center p-4"
+      style={{
+        backgroundImage:
+          "url('https://mdbcdn.b-cdn.net/img/Photos/new-templates/search-box/img4.webp')",
+      }}
+    >
+      <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl shadow-lg p-8 sm:p-10 w-full max-w-md">
+        <div className="text-center mb-6">
           <img
             src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/lotus.webp"
             alt="logo"
@@ -92,13 +109,11 @@ const SignUp = () => {
           </h4>
         </div>
 
-        {/* Title */}
-        <h2 className="text-center text-blue-800 font-bold text-xl sm:text-2xl uppercase mb-4">
-          Create an Account
+        <h2 className="text-center text-blue-800 font-bold text-xl sm:text-2xl uppercase mb-8">
+          Create an account
         </h2>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
             name="name"
@@ -106,7 +121,6 @@ const SignUp = () => {
             onChange={handleChange}
             placeholder="Your Name"
             className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
           <input
             type="email"
@@ -115,7 +129,14 @@ const SignUp = () => {
             onChange={handleChange}
             placeholder="Your Email"
             className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            required
+          />
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="Your Phone Number"
+            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="password"
@@ -124,7 +145,6 @@ const SignUp = () => {
             onChange={handleChange}
             placeholder="Password"
             className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
           <input
             type="password"
@@ -133,14 +153,12 @@ const SignUp = () => {
             onChange={handleChange}
             placeholder="Repeat your password"
             className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
           <select
             name="role"
             value={form.role}
             onChange={handleChange}
             className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            required
           >
             <option value="">Select Role</option>
             <option value="admin">Admin</option>
@@ -158,9 +176,9 @@ const SignUp = () => {
             />
             <label htmlFor="agree" className="text-gray-700 text-sm sm:text-base">
               I agree to the{" "}
-              <Link to="/terms" className="text-blue-600 underline">
+              <a href="#!" className="text-blue-600 underline">
                 Terms of service
-              </Link>
+              </a>
             </label>
           </div>
 
@@ -169,24 +187,20 @@ const SignUp = () => {
 
           <button
             type="submit"
-            disabled={loading}
-            className={`w-full ${
-              loading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"
-            } text-white font-bold py-3 rounded-xl text-lg transition-colors duration-200 shadow-md`}
+            className="w-full bg-blue-700 text-white font-bold py-3 rounded-xl text-lg hover:bg-blue-800 transition-colors duration-200 shadow-md"
           >
-            {loading ? "Registering..." : "Register"}
+            Register
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-4 text-sm sm:text-base">
+        <p className="text-center text-gray-600 mt-6 text-sm sm:text-base">
           Already have an account?{" "}
-           <Link to="/terms" className="text-blue-600 underline">
-            Terms of service
-          </Link>
-
+          <a href="/login" className="text-blue-600 font-semibold underline">
+            Login here
+          </a>
         </p>
       </div>
-    </div>
+    </section>
   );
 };
 
