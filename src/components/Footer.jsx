@@ -79,17 +79,19 @@ const Footer = () => {
           <h3 className="font-semibold text-white mb-3 text-lg">
             Booking Solutions
           </h3>
-          {["City Transfers", "Airport Shuttle", "Corporate Rides"].map(
-            (link) => (
-              <a
-                key={link}
-                href="#"
-                className="block mb-2 text-sm hover:text-[#ff6b00] transition"
-              >
-                {link}
-              </a>
-            )
-          )}
+          {[
+            { name: "City Transfers", path: "/city-transfer" },
+            { name: "Airport Shuttle", path: "#" },
+            { name: "Corporate Rides", path: "#" }
+          ].map((link) => (
+            <a
+              key={link.name}
+              href={link.path}
+              className="block mb-2 text-sm hover:text-[#ff6b00] transition"
+            >
+              {link.name}
+            </a>
+          ))}
         </div>
 
         {/* Customer Care */}

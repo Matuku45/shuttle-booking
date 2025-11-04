@@ -44,9 +44,18 @@ const LocationPage = () => {
 
       // ✅ Fetch addresses for coordinates using reverse geocoding
       const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY;
+      if (!apiKey) {
+        alert("GraphHopper API key is not configured. Please set VITE_GRAPHHOPPER_API_KEY in your environment variables.");
+        setLoading(false);
+        return;
+      }
       const addressPromises = parsedCoords.map(async ([lat, lon]) => {
         const geocodeUrl = `https://graphhopper.com/api/1/geocode?point=${lat},${lon}&reverse=true&locale=en&key=${apiKey}`;
         const response = await fetch(geocodeUrl);
+        if (!response.ok) {
+          console.error(`Geocoding failed for ${lat},${lon}: ${response.status}`);
+          return { city: "Unknown City", address: "Unknown Address" };
+        }
         const data = await response.json();
         if (data.hits && data.hits.length > 0) {
           const hit = data.hits[0];
@@ -65,6 +74,12 @@ const LocationPage = () => {
       const apiUrl = `https://graphhopper.com/api/1/route?point=${parsedCoords[0][0]},${parsedCoords[0][1]}&point=${parsedCoords[1][0]},${parsedCoords[1][1]}&vehicle=car&locale=en&points_encoded=false&key=${apiKey}`;
 
       const response = await fetch(apiUrl);
+      if (!response.ok) {
+        console.error(`Route fetch failed: ${response.status}`);
+        alert("Failed to fetch route from GraphHopper. Please check your API key and try again.");
+        setLoading(false);
+        return;
+      }
       const data = await response.json();
 
       if (!data.paths || data.paths.length === 0) {

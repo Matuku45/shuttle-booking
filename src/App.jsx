@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashBoard";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Location from "./pages/location"; // ✅ Fixed import name
+import CityTransfer from "./pages/city-transfer"; // ✅ Added import
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/location" element={<Location />} /> {/* ✅ Added route */}
+            <Route path="/city-transfer" element={<CityTransfer />} /> {/* ✅ Added route */}
           </Routes>
         </main>
 
