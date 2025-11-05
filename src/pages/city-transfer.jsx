@@ -3,9 +3,6 @@ import {
   FaUser,
   FaPhone,
   FaEnvelope,
-  FaFacebookF,
-  FaInstagram,
-  FaTiktok,
   FaWhatsapp,
   FaMapMarkerAlt,
   FaClock,
@@ -21,9 +18,6 @@ const CityTransfer = () => {
     phone: "",
     whatsapp: "",
     email: "",
-    facebook: "",
-    instagram: "",
-    tiktok: "",
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -205,53 +199,7 @@ const CityTransfer = () => {
                   />
                 </div>
 
-                {/* Facebook */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FaFacebookF className="inline mr-2 text-blue-600" />
-                    Facebook Profile
-                  </label>
-                  <input
-                    type="url"
-                    name="facebook"
-                    value={formData.facebook}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="https://facebook.com/yourprofile"
-                  />
-                </div>
 
-                {/* Instagram */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FaInstagram className="inline mr-2 text-pink-600" />
-                    Instagram Handle
-                  </label>
-                  <input
-                    type="text"
-                    name="instagram"
-                    value={formData.instagram}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="@yourhandle"
-                  />
-                </div>
-
-                {/* TikTok */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FaTiktok className="inline mr-2 text-black" />
-                    TikTok Username
-                  </label>
-                  <input
-                    type="text"
-                    name="tiktok"
-                    value={formData.tiktok}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="@yourusername"
-                  />
-                </div>
               </div>
 
               <div className="text-center">
