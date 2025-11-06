@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserShield } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserShield, FaSpinner } from "react-icons/fa";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ const SignUp = () => {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // 👈 added for loading animation
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -28,46 +29,51 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
 
-    // Combine phone + WhatsApp into one string for backend
     const combinedPhone = `${formData.phone}|${formData.whatsapp}`;
 
     const payload = {
       name: formData.name,
       email: formData.email,
       password: formData.password,
-      phone: combinedPhone, // store both numbers under "phone"
+      phone: combinedPhone,
       role: formData.role,
     };
 
     console.log("Sending body:", payload);
 
     try {
-      const res = await fetch(
-        "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch("https://shuttle-booking-system.fly.dev/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (res.ok) {
         setSuccess("Account created successfully!");
         setError("");
         setTimeout(() => navigate("/login"), 2000);
       } else {
+        const errMsg = await res.text();
+        console.error("Registration failed:", errMsg);
         setError("Registration failed. Try again.");
-        setSuccess("");
       }
     } catch (err) {
-      setError("Server error. Please check connection.");
-      console.error(err);
+      console.error("Server error:", err);
+      setError("Server error. Please check your connection.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <section
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1 }}
       className="min-h-screen flex items-center justify-center bg-cover bg-center p-4"
       style={{
         backgroundImage:
@@ -75,9 +81,9 @@ const SignUp = () => {
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
         className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl shadow-xl p-8 sm:p-10 w-full max-w-md backdrop-blur-md"
       >
         <div className="text-center mb-6">
@@ -106,7 +112,8 @@ const SignUp = () => {
             value={formData.name}
             onChange={handleChange}
             placeholder="Enter your full name"
-            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+            required
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           {/* Email */}
@@ -119,7 +126,8 @@ const SignUp = () => {
             value={formData.email}
             onChange={handleChange}
             placeholder="Enter your email"
-            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+            required
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           {/* Phone */}
@@ -132,7 +140,8 @@ const SignUp = () => {
             value={formData.phone}
             onChange={handleChange}
             placeholder="Enter your phone number"
-            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+            required
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           {/* WhatsApp */}
@@ -145,7 +154,8 @@ const SignUp = () => {
             value={formData.whatsapp}
             onChange={handleChange}
             placeholder="Enter your WhatsApp number"
-            className="w-full p-3 border border-green-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-green-500"
+            required
+            className="w-full p-3 border border-green-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-green-500"
           />
 
           {/* Password */}
@@ -158,7 +168,9 @@ const SignUp = () => {
             value={formData.password}
             onChange={handleChange}
             placeholder="Enter password"
-            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="new-password"
+            required
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           {/* Role */}
@@ -169,11 +181,11 @@ const SignUp = () => {
             name="role"
             value={formData.role}
             onChange={handleChange}
+            required
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
-          
-          
-            <option value="passenger">Passenger</option>
+            <option value="">Passenger</option>
+            
           </select>
 
           {/* Agreement */}
@@ -198,14 +210,31 @@ const SignUp = () => {
           {error && <div className="text-red-600 text-center font-medium">{error}</div>}
           {success && <div className="text-green-600 text-center font-medium">{success}</div>}
 
-          {/* Button */}
+          {/* Animated Button */}
           <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={!isLoading ? { scale: 1.03 } : {}}
+            whileTap={!isLoading ? { scale: 0.97 } : {}}
+            disabled={isLoading}
             type="submit"
-            className="w-full bg-blue-700 text-white font-bold py-3 rounded-xl text-lg hover:bg-blue-800 transition-all duration-300 shadow-lg"
+            className={`w-full font-bold py-3 rounded-xl text-lg shadow-lg transition-all duration-300 ${
+              isLoading
+                ? "bg-blue-400 text-white cursor-not-allowed"
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
           >
-            Register
+            {isLoading ? (
+              <motion.div
+                className="flex justify-center items-center space-x-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <FaSpinner className="animate-spin text-white" />
+                <span>Registering...</span>
+              </motion.div>
+            ) : (
+              "Register"
+            )}
           </motion.button>
         </form>
 
@@ -217,7 +246,7 @@ const SignUp = () => {
           </a>
         </p>
       </motion.div>
-    </section>
+    </motion.section>
   );
 };
 
