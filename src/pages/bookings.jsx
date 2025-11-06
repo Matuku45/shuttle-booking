@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev"; // Production API base URL for bookings
+const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
 
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -11,42 +11,26 @@ const AllBookings = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Get logged-in user's email from localStorage
+  // Logged-in user's email
   const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
 
-  // Load bookings from localStorage (created in PassengerDashboard)
+  // Helper function to normalize bookings
+  const normalizeBooking = (b) => ({
+    ...b,
+    from: b.route?.split(/->|→/)[0]?.trim() || "",
+    to: b.route?.split(/->|→/)[1]?.trim() || "",
+  });
+
+  // Load bookings from localStorage & filter by email
   useEffect(() => {
     const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
-    const filteredLocalBookings = localBookings
+    const filtered = localBookings
       .filter((b) => b.email?.toLowerCase() === loggedInEmail)
-      .map((b) => ({
-        ...b,
-        from: b.route?.split(" → ")[0] || "",
-        to: b.route?.split(" → ")[1] || "",
-      }));
-    setBookings((prev) => [...prev, ...filteredLocalBookings]);
+      .map(normalizeBooking);
+    setBookings(filtered);
   }, [loggedInEmail]);
 
-  // Add one dummy booking for testing
-  useEffect(() => {
-    const dummyBooking = {
-      id: -1,
-      passengerName: "Test Passenger",
-      email: loggedInEmail || "test@example.com",
-      phone: "0123456789",
-      route: "Pretoria -> Cape Town",
-      date: "2025-10-05",
-      time: "22:36",
-      seats: 1,
-      price: 100,
-      car: "MetroShuttle Bus <c1234555666>",
-      from: "Pretoria",
-      to: "Cape Town",
-    };
-    setBookings((prev) => [dummyBooking, ...prev]);
-  }, [loggedInEmail]);
-
-  // Fetch bookings from API
+  // Fetch bookings from API & filter by email
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -54,15 +38,10 @@ const AllBookings = () => {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.bookings)) {
-          // Filter bookings by logged-in email (ignore case)
-          const filteredBookings = data.bookings
+          const filtered = data.bookings
             .filter((b) => b.email?.toLowerCase() === loggedInEmail)
-            .map((b) => ({
-              ...b,
-              from: b.route?.split(" -> ")[0] || "",
-              to: b.route?.split(" -> ")[1] || "",
-            }));
-          setBookings((prev) => [...prev, ...filteredBookings]); // Append API bookings after dummy
+            .map(normalizeBooking);
+          setBookings((prev) => [...prev, ...filtered]); // append API bookings
         }
       } catch (err) {
         console.error("Error fetching bookings:", err);
@@ -72,25 +51,23 @@ const AllBookings = () => {
     };
 
     if (loggedInEmail) fetchBookings();
-    else {
-      setLoading(false);
-    }
+    else setLoading(false);
   }, [loggedInEmail]);
 
-  // Countdown timer logic
+  // Countdown timer for bookings
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
       bookings.forEach((b) => {
-        const bookingTime = new Date(b.date).getTime();
-        const now = new Date().getTime();
-        const diff = bookingTime - now;
+        const diff = new Date(b.date).getTime() - new Date().getTime();
         if (diff > 0) {
-          const h = Math.floor(diff / (1000 * 60 * 60));
-          const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const s = Math.floor((diff % (1000 * 60)) / 1000);
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
           newTimers[b.id] = `${h}h ${m}m ${s}s`;
-        } else newTimers[b.id] = "Time passed";
+        } else {
+          newTimers[b.id] = "Time passed";
+        }
       });
       setTimers(newTimers);
     }, 1000);
@@ -98,38 +75,30 @@ const AllBookings = () => {
   }, [bookings]);
 
   const handleEdit = (booking) => setEditingBooking(booking);
-
   const handleFieldChange = (e, booking, field) => {
-    const updatedBookings = bookings.map((b) =>
-      b.id === booking.id ? { ...b, [field]: e.target.value } : b
+    setBookings((prev) =>
+      prev.map((b) => (b.id === booking.id ? { ...b, [field]: e.target.value } : b))
     );
-    setBookings(updatedBookings);
   };
 
   const goToLocation = () => navigate("/location");
 
-  // Update booking in API
   const handleUpdateBooking = async (booking) => {
     try {
-      const updatedBooking = {
-        ...booking,
-        price: Number(booking.seats) * 75, // Example: dynamic pricing
-      };
-
+      const updatedBooking = { ...booking, price: Number(booking.seats) * 75 };
       const res = await fetch(`${BASE_URL}/api/bookings/${booking.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedBooking),
       });
-
       const data = await res.json();
       if (!data.success) throw new Error("Failed to update booking");
 
-      const updatedBookings = bookings.map((b) => (b.id === booking.id ? updatedBooking : b));
-      setBookings(updatedBookings);
+      setBookings((prev) =>
+        prev.map((b) => (b.id === booking.id ? updatedBooking : b))
+      );
       setEditingBooking(null);
 
-      // Redirect to Stripe payment
       window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
       alert("✅ Booking updated and payment saved!");
     } catch (err) {
@@ -168,7 +137,6 @@ const AllBookings = () => {
               </div>
 
               <h3 className="font-bold text-xl text-white mb-3">{b.passengerName}</h3>
-
               <p className="text-sm text-white flex items-center gap-2">
                 <FaCar className="text-yellow-300" /> {b.car}
               </p>
@@ -203,10 +171,7 @@ const AllBookings = () => {
                   </p>
                 )}
 
-                <p className="text-lg font-semibold text-green-200">
-                  💰 R {b.price}
-                </p>
-
+                <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
                 <p className="flex items-center gap-2 text-sm">
                   <FaEnvelope /> {b.email}
                 </p>
