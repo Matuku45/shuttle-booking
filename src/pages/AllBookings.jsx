@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev"; // Production API base URL for bookings
+const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
 
 const AllBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -11,28 +11,25 @@ const AllBookings = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Get logged-in user's email from localStorage
-  const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
+  // Normalize booking routes
+  const normalizeBooking = (b) => ({
+    ...b,
+    from: b.route?.split(/->|→/)[0]?.trim() || "",
+    to: b.route?.split(/->|→/)[1]?.trim() || "",
+  });
 
-  // Load bookings from localStorage (created in PassengerDashboard)
+  // Load bookings from localStorage (if any)
   useEffect(() => {
     const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
-    const filteredLocalBookings = localBookings
-      .filter((b) => b.email?.toLowerCase() === loggedInEmail)
-      .map((b) => ({
-        ...b,
-        from: b.route?.split(" → ")[0] || "",
-        to: b.route?.split(" → ")[1] || "",
-      }));
-    setBookings((prev) => [...prev, ...filteredLocalBookings]);
-  }, [loggedInEmail]);
+    setBookings(localBookings.map(normalizeBooking));
+  }, []);
 
-  // Add one dummy booking for testing
+  // Add dummy booking for testing
   useEffect(() => {
     const dummyBooking = {
       id: -1,
       passengerName: "Test Passenger",
-      email: loggedInEmail || "test@example.com",
+      email: "test@example.com",
       phone: "0123456789",
       route: "Pretoria -> Cape Town",
       date: "2025-10-05",
@@ -44,7 +41,7 @@ const AllBookings = () => {
       to: "Cape Town",
     };
     setBookings((prev) => [dummyBooking, ...prev]);
-  }, [loggedInEmail]);
+  }, []);
 
   // Fetch bookings from API
   useEffect(() => {
@@ -54,15 +51,10 @@ const AllBookings = () => {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.bookings)) {
-          // Filter bookings by logged-in email (ignore case)
-          const filteredBookings = data.bookings
-            .filter((b) => b.email?.toLowerCase() === loggedInEmail)
-            .map((b) => ({
-              ...b,
-              from: b.route?.split(" -> ")[0] || "",
-              to: b.route?.split(" -> ")[1] || "",
-            }));
-          setBookings((prev) => [...prev, ...filteredBookings]); // Append API bookings after dummy
+          setBookings((prev) => [
+            ...prev,
+            ...data.bookings.map(normalizeBooking),
+          ]);
         }
       } catch (err) {
         console.error("Error fetching bookings:", err);
@@ -71,26 +63,23 @@ const AllBookings = () => {
       }
     };
 
-    if (loggedInEmail) fetchBookings();
-    else {
-      setLoading(false);
-    }
-  }, [loggedInEmail]);
+    fetchBookings();
+  }, []);
 
   // Countdown timer logic
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
       bookings.forEach((b) => {
-        const bookingTime = new Date(b.date).getTime();
-        const now = new Date().getTime();
-        const diff = bookingTime - now;
+        const diff = new Date(b.date).getTime() - new Date().getTime();
         if (diff > 0) {
-          const h = Math.floor(diff / (1000 * 60 * 60));
-          const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const s = Math.floor((diff % (1000 * 60)) / 1000);
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
           newTimers[b.id] = `${h}h ${m}m ${s}s`;
-        } else newTimers[b.id] = "Time passed";
+        } else {
+          newTimers[b.id] = "Time passed";
+        }
       });
       setTimers(newTimers);
     }, 1000);
@@ -98,23 +87,17 @@ const AllBookings = () => {
   }, [bookings]);
 
   const handleEdit = (booking) => setEditingBooking(booking);
-
   const handleFieldChange = (e, booking, field) => {
-    const updatedBookings = bookings.map((b) =>
-      b.id === booking.id ? { ...b, [field]: e.target.value } : b
+    setBookings((prev) =>
+      prev.map((b) => (b.id === booking.id ? { ...b, [field]: e.target.value } : b))
     );
-    setBookings(updatedBookings);
   };
 
   const goToLocation = () => navigate("/location");
 
-  // Update booking in API
   const handleUpdateBooking = async (booking) => {
     try {
-      const updatedBooking = {
-        ...booking,
-        price: Number(booking.seats) * 75, // Example: dynamic pricing
-      };
+      const updatedBooking = { ...booking, price: Number(booking.seats) * 75 };
 
       const res = await fetch(`${BASE_URL}/api/bookings/${booking.id}`, {
         method: "PUT",
@@ -125,11 +108,11 @@ const AllBookings = () => {
       const data = await res.json();
       if (!data.success) throw new Error("Failed to update booking");
 
-      const updatedBookings = bookings.map((b) => (b.id === booking.id ? updatedBooking : b));
-      setBookings(updatedBookings);
+      setBookings((prev) =>
+        prev.map((b) => (b.id === booking.id ? updatedBooking : b))
+      );
       setEditingBooking(null);
 
-      // Redirect to Stripe payment
       window.open("https://buy.stripe.com/test_7sY28t91X6gegc8gDwcwg00", "_blank");
       alert("✅ Booking updated and payment saved!");
     } catch (err) {
@@ -149,12 +132,12 @@ const AllBookings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
       <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-center text-blue-900 drop-shadow-md">
-        🛡️ My Bookings
+        🛡️ All Bookings
       </h2>
 
       {bookings.length === 0 ? (
         <p className="text-center text-gray-700 font-semibold text-lg">
-          No bookings found for your account.
+          No bookings available.
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -203,10 +186,7 @@ const AllBookings = () => {
                   </p>
                 )}
 
-                <p className="text-lg font-semibold text-green-200">
-                  💰 R {b.price}
-                </p>
-
+                <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
                 <p className="flex items-center gap-2 text-sm">
                   <FaEnvelope /> {b.email}
                 </p>
