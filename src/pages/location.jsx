@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 
+// 🔑 Hardcoded GraphHopper API Key
+const GRAPH_HOPPER_API_KEY = "0aab22de-93bc-4aeb-a6d6-f405f07211ab";
+
 const LocationPage = () => {
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const email = user.email || "user@example.com";
@@ -15,12 +18,11 @@ const LocationPage = () => {
   const [path, setPath] = useState("");
   const [savedDirections, setSavedDirections] = useState([]);
 
-  // Fetch saved directions on mount
   useEffect(() => {
     fetchSavedDirections();
   }, []);
 
-  // ✅ Extract coordinates & fetch directions
+  // Extract coordinates & fetch directions
   const handleExtractAndDirections = async () => {
     if (!graphhopperUrl.startsWith("https://graphhopper.com/maps")) {
       alert("Please enter a valid GraphHopper Maps URL.");
@@ -30,7 +32,6 @@ const LocationPage = () => {
     try {
       const urlParams = new URL(graphhopperUrl).searchParams;
       const points = urlParams.getAll("point");
-
       if (points.length < 2) {
         alert("Please provide at least 2 points in the URL.");
         return;
@@ -40,20 +41,12 @@ const LocationPage = () => {
         const [lat, lon] = p.replace("_Current+Location", "").split(",").map(parseFloat);
         return [lat, lon];
       });
-
       setCoordinates(parsedCoords);
       setLoading(true);
 
       // Fetch addresses
-      const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY;
-      if (!apiKey) {
-        alert("GraphHopper API key is not configured. Set VITE_GRAPHHOPPER_API_KEY.");
-        setLoading(false);
-        return;
-      }
-
       const addressPromises = parsedCoords.map(async ([lat, lon]) => {
-        const geocodeUrl = `https://graphhopper.com/api/1/geocode?point=${lat},${lon}&reverse=true&locale=en&key=${apiKey}`;
+        const geocodeUrl = `https://graphhopper.com/api/1/geocode?point=${lat},${lon}&reverse=true&locale=en&key=${GRAPH_HOPPER_API_KEY}`;
         const res = await fetch(geocodeUrl);
         if (!res.ok) return { city: "Unknown City", address: "Unknown Address" };
         const data = await res.json();
@@ -68,7 +61,7 @@ const LocationPage = () => {
       setAddresses(fetchedAddresses);
 
       // Fetch directions
-      const apiUrl = `https://graphhopper.com/api/1/route?point=${parsedCoords[0][0]},${parsedCoords[0][1]}&point=${parsedCoords[1][0]},${parsedCoords[1][1]}&vehicle=car&locale=en&points_encoded=false&key=${apiKey}`;
+      const apiUrl = `https://graphhopper.com/api/1/route?point=${parsedCoords[0][0]},${parsedCoords[0][1]}&point=${parsedCoords[1][0]},${parsedCoords[1][1]}&vehicle=car&locale=en&points_encoded=false&key=${GRAPH_HOPPER_API_KEY}`;
       const routeRes = await fetch(apiUrl);
       const routeData = await routeRes.json();
 
@@ -85,7 +78,6 @@ const LocationPage = () => {
       }));
 
       setDirections(instructions);
-
       const pathString = instructions.map((s) => s.text).join(" -> ");
       setPath(pathString);
     } catch (err) {
@@ -140,9 +132,7 @@ const LocationPage = () => {
 
   return (
     <div className="min-h-screen p-6 flex flex-col items-center bg-gradient-to-br from-blue-50 to-gray-100">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        🚐 Shuttle Route Viewer
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">🚐 Shuttle Route Viewer</h2>
 
       {/* URL Input */}
       <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-xl mb-6">
@@ -174,9 +164,7 @@ const LocationPage = () => {
       {/* Coordinates & Addresses */}
       {coordinates.length > 0 && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-100 shadow-lg rounded-2xl p-6 w-full max-w-xl mb-6 border border-blue-200">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            📌 Extracted Coordinates & Locations
-          </h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">📌 Extracted Coordinates & Locations</h3>
           <div className="space-y-4">
             {coordinates.map(([lat, lon], idx) => (
               <div key={idx} className="bg-white p-4 shadow-sm rounded-lg border-l-4 border-blue-500">
@@ -227,17 +215,17 @@ const LocationPage = () => {
               return (
                 <div key={saved.id || idx} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
                   <h4 className="font-semibold text-green-600 mb-2">Saved Route {idx + 1}</h4>
-                  {parsedData.coordinates && parsedData.coordinates.length > 0 && (
+                  {parsedData.coordinates?.length > 0 && (
                     <ul className="list-disc ml-4 text-sm mb-2">
                       {parsedData.coordinates.map(([lat, lon], cidx) => <li key={cidx}>Lat: {lat}, Lon: {lon}</li>)}
                     </ul>
                   )}
-                  {parsedData.addresses && parsedData.addresses.length > 0 && (
+                  {parsedData.addresses?.length > 0 && (
                     <ul className="list-disc ml-4 text-sm mb-2">
                       {parsedData.addresses.map((addr, aidx) => <li key={aidx}>{addr.city}, {addr.address}</li>)}
                     </ul>
                   )}
-                  {parsedData.directions && parsedData.directions.length > 0 && (
+                  {parsedData.directions?.length > 0 && (
                     <ol className="list-decimal ml-4 text-sm mb-2">
                       {parsedData.directions.map((step, didx) => <li key={didx}>{step.text} ({step.distance} km, {step.time} min)</li>)}
                     </ol>

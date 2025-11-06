@@ -4,86 +4,65 @@ import { motion } from "framer-motion";
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserShield } from "react-icons/fa";
 
 const SignUp = () => {
-  const [form, setForm] = useState({
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
-    repeatPassword: "",
+    phone: "",
+    whatsapp: "",
     role: "",
     agree: false,
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const navigate = useNavigate();
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    setError("");
-    setSuccess("");
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.email || !form.phone || !form.password || !form.repeatPassword || !form.role) {
-      setError("Please fill in all fields.");
-      return;
-    }
+    // Combine phone + WhatsApp into one string for backend
+    const combinedPhone = `${formData.phone}|${formData.whatsapp}`;
 
-    if (form.password !== form.repeatPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      phone: combinedPhone, // store both numbers under "phone"
+      role: formData.role,
+    };
 
-    if (!form.agree) {
-      setError("You must agree to the Terms of service.");
-      return;
-    }
+    console.log("Sending body:", payload);
 
     try {
-      const response = await fetch("https://shuttle-booking-system.fly.dev/users/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          password: form.password,
-          role: form.role,
-        }),
-      });
+      const res = await fetch(
+        "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess(data.message);
+      if (res.ok) {
+        setSuccess("Account created successfully!");
         setError("");
-        setForm({
-          name: "",
-          email: "",
-          phone: "",
-          password: "",
-          repeatPassword: "",
-          role: "",
-          agree: false,
-        });
-        navigate("/login");
+        setTimeout(() => navigate("/login"), 2000);
       } else {
-        setError(data.message || "Something went wrong");
+        setError("Registration failed. Try again.");
         setSuccess("");
       }
     } catch (err) {
+      setError("Server error. Please check connection.");
       console.error(err);
-      setError("Server error. Please try again later.");
-      setSuccess("");
     }
   };
 
@@ -117,14 +96,14 @@ const SignUp = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
+          {/* Full Name */}
           <label className="block text-gray-800 font-medium text-sm sm:text-base">
             <FaUser className="inline mr-2 text-blue-700" /> Full Name
           </label>
           <input
             type="text"
             name="name"
-            value={form.name}
+            value={formData.name}
             onChange={handleChange}
             placeholder="Enter your full name"
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
@@ -137,7 +116,7 @@ const SignUp = () => {
           <input
             type="email"
             name="email"
-            value={form.email}
+            value={formData.email}
             onChange={handleChange}
             placeholder="Enter your email"
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
@@ -150,10 +129,23 @@ const SignUp = () => {
           <input
             type="tel"
             name="phone"
-            value={form.phone}
+            value={formData.phone}
             onChange={handleChange}
             placeholder="Enter your phone number"
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          {/* WhatsApp */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaPhone className="inline mr-2 text-green-600" /> WhatsApp Number
+          </label>
+          <input
+            type="tel"
+            name="whatsapp"
+            value={formData.whatsapp}
+            onChange={handleChange}
+            placeholder="Enter your WhatsApp number"
+            className="w-full p-3 border border-green-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-green-500"
           />
 
           {/* Password */}
@@ -163,22 +155,9 @@ const SignUp = () => {
           <input
             type="password"
             name="password"
-            value={form.password}
+            value={formData.password}
             onChange={handleChange}
             placeholder="Enter password"
-            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          {/* Repeat Password */}
-          <label className="block text-gray-800 font-medium text-sm sm:text-base">
-            <FaLock className="inline mr-2 text-blue-700" /> Confirm Password
-          </label>
-          <input
-            type="password"
-            name="repeatPassword"
-            value={form.repeatPassword}
-            onChange={handleChange}
-            placeholder="Repeat your password"
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
 
@@ -188,12 +167,12 @@ const SignUp = () => {
           </label>
           <select
             name="role"
-            value={form.role}
+            value={formData.role}
             onChange={handleChange}
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">-- Choose your role --</option>
-            <option value="admin">Admin</option>
+          
+          
             <option value="passenger">Passenger</option>
           </select>
 
@@ -202,7 +181,7 @@ const SignUp = () => {
             <input
               type="checkbox"
               name="agree"
-              checked={form.agree}
+              checked={formData.agree}
               onChange={handleChange}
               id="agree"
               className="w-4 h-4 mt-1 accent-blue-600"

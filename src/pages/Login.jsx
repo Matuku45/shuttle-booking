@@ -6,7 +6,11 @@ import flightImage from "../components/imgs/flight.jpg";
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
 const Login = ({ onForgotPasswordClick }) => {
-  const [form, setForm] = useState({ username: "", password: "", role: "passenger" });
+  const [form, setForm] = useState({
+    username: "",       // empty
+    password: "",       // empty
+    role: "passenger",  // default role
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -72,11 +76,11 @@ const Login = ({ onForgotPasswordClick }) => {
             <h3 className="text-blue-700 mb-1 text-2xl sm:text-3xl font-semibold">
               Shuttle Booking System
             </h3>
-            <p className="text-gray-600 text-sm sm:text-base">Sign in to your account</p>
+            <p className="text-gray-600 text-sm sm:text-base">Sign In / Log In to your account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 flex flex-col">
-            {/* Username / Email Field */}
+            {/* Username Field */}
             <div className="relative">
               <FaUser className="absolute top-3 left-3 text-gray-400" />
               <input
@@ -123,11 +127,9 @@ const Login = ({ onForgotPasswordClick }) => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full ${
-                loading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"
-              } text-white font-bold py-3 rounded-lg transition`}
+              className={`w-full ${loading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"} text-white font-bold py-3 rounded-lg transition`}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Logging in..." : "Log In / Sign In"}
             </button>
 
             {/* Forgot Password */}
