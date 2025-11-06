@@ -99,30 +99,49 @@ const PassengerDashboard = () => {
     setSeatsSelection((prev) => ({ ...prev, [shuttleId]: Number(seats) }));
   };
 
-  const savePayment = async (shuttle, seats) => {
-    try {
-      const paymentData = {
-        passenger_name: user.name,
-        passenger_phone: user.phone || "",
-        shuttle_id: shuttle.id,
-        booking_id: Math.floor(Math.random() * 1000000),
-        seats,
-        amount: shuttle.price * seats,
-        status: "Paid",
-        payment_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        car: DEFAULT_CAR.name,
-      };
+const savePayment = async (shuttle, seats, bookingId) => {
+  try {
+    const paymentData = {
+      passenger_name: user.name,
+      passenger_phone: user.phone || "",
+      shuttle_id: shuttle.id,
+      booking_id: bookingId, // Use actual booking ID
+      seats,
+      amount: shuttle.price * seats,
+      status: "Paid",
+      payment_date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      car: DEFAULT_CAR.name,
+    };
 
-      await fetch(`${PAYMENT_BASE}/api/payments/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(paymentData),
-      });
-    } catch (err) {
-      console.error("Payment save error:", err.message);
-    }
-  };
+    // 1️⃣ Save to backend
+    const response = await fetch(`${PAYMENT_BASE}/api/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) throw new Error("Payment API failed");
+
+    const result = await response.json();
+    if (!result.success) throw new Error("Payment failed at API");
+
+    // 2️⃣ Save to localStorage
+    const storedPayments = JSON.parse(localStorage.getItem("payments")) || [];
+    storedPayments.push(result.payment); // Save the API-returned payment object
+    localStorage.setItem("payments", JSON.stringify(storedPayments));
+
+    console.log("Payment saved locally and sent to backend:", result.payment);
+
+    return result.payment;
+
+  } catch (err) {
+    console.error("Payment save error:", err.message);
+    alert("Payment could not be saved. Please try again.");
+    return null;
+  }
+};
+
 
   const requestUserLocation = async () => {
     return new Promise((resolve) => {
@@ -162,7 +181,7 @@ const PassengerDashboard = () => {
     );
   };
 
-  
+
 
 const handleBooking = async (shuttle) => {
   const seats = seatsSelection[shuttle.id] || 1;
@@ -173,64 +192,92 @@ const handleBooking = async (shuttle) => {
   setBookingLoading(true);
   setBookingProgress(0);
 
-  setBookingProgress(10);
-  await requestUserLocation();
-  setBookingProgress(20);
-
-  const newBooking = {
-    id: Math.floor(Math.random() * 1000000),
-    shuttle_id: shuttle.id,
-    passengerName: user.name,
-    email: user.email,
-    phone: user.phone,
-    route: shuttle.route,
-    date: shuttle.date,
-    time: shuttle.time,
-    seats,
-    price: shuttle.price * seats,
-    path: shuttle.path,
-    car: DEFAULT_CAR.name,
-  };
-
   try {
-    setBookingProgress(30);
-    const response = await fetch(`${PAYMENT_BASE}/api/bookings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newBooking),
-    });
+    setBookingProgress(10);
+    await requestUserLocation();
+    setBookingProgress(20);
 
-    if (!response.ok) {
-      console.warn("Booking API error:", response.status);
-      throw new Error("Booking API failed");
-    }
+    // Create booking payload
+    const bookingPayload = {
+      shuttle_id: shuttle.id,
+      passengerName: user.name,
+      email: user.email,
+      phone: user.phone,
+      route: shuttle.route,
+      date: shuttle.date,
+      time: shuttle.time,
+      seats,
+      price: shuttle.price * seats,
+      path: shuttle.path,
+      car: DEFAULT_CAR.name,
+    };
 
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error("Booking failed at API");
-    }
+    // Send booking to backend
+const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(bookingPayload),
+});
+
+
+    if (!bookingRes.ok) throw new Error(`Booking API failed: ${bookingRes.status}`);
+
+    const bookingResult = await bookingRes.json();
+    if (!bookingResult.success) throw new Error("Booking failed at API");
+
+    const savedBooking = bookingResult.booking; // ✅ Use this booking ID
+
+    // Save booking locally
+    const storedBookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    storedBookings.push(savedBooking);
+    localStorage.setItem("bookings", JSON.stringify(storedBookings));
 
     setBookingProgress(50);
-  } catch (err) {
-    console.error("Error sending booking to API:", err.message);
-    alert("Booking API not available, saving locally and proceeding...");
-  } finally {
-    const updatedBookings = [...bookings, newBooking];
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    localStorage.setItem("user", JSON.stringify(user));
+
+    // Now make the payment
+    const paymentPayload = {
+      passenger_name: user.name,
+      passenger_phone: user.phone,
+      shuttle_id: shuttle.id,
+      booking_id: savedBooking.id, // ✅ Use backend-generated ID
+      seats,
+      amount: shuttle.price * seats,
+      status: "Paid",
+      payment_date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      car: DEFAULT_CAR.name,
+    };
+
+    const paymentRes = await fetch(`${PAYMENT_BASE}/api/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(paymentPayload),
+    });
+
+    if (!paymentRes.ok) throw new Error(`Payment API failed: ${paymentRes.status}`);
+
+    const paymentResult = await paymentRes.json();
+    if (!paymentResult.success) throw new Error("Payment failed at API");
+
+    // Save payment locally
+    const storedPayments = JSON.parse(localStorage.getItem("payments")) || [];
+    storedPayments.push(paymentResult.payment);
+    localStorage.setItem("payments", JSON.stringify(storedPayments));
 
     setBookingProgress(100);
 
-    // ✅ Redirect to your own success page instead of Stripe payment
-    setTimeout(() => {
-      window.location.href = "/location-form"; // ← change this to your desired route
-    }, 1000);
+    alert("Booking and payment successful!");
+    window.location.href = "/location-form";
 
+  } catch (err) {
+    console.error("Booking/Payment error:", err.message);
+    alert("Error during booking or payment: " + err.message);
+  } finally {
     setBookingLoading(false);
     setBookingProgress(0);
   }
 };
+
 
 
 
@@ -307,32 +354,29 @@ const handleBooking = async (shuttle) => {
         >
           ☰ Menu
         </button>
-
 {activeTab === "book" && (
   <section className="space-y-6">
+    {/* Header */}
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-3xl font-extrabold text-gray-800 tracking-wide">
         🚍 Available Shuttles
       </h2>
       <button
-        onClick={() => {
-          const fetchShuttles = async () => {
-            try {
-              const res = await fetch(`/api/shuttles`);
-              if (!res.ok) throw new Error("Failed to fetch shuttles");
-              const data = await res.json();
-              const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
-              setShuttles(
-                shuttlesData.length
-                  ? shuttlesData.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
-                  : defaultShuttles
-              );
-            } catch (err) {
-              console.warn("API error, using default shuttles:", err.message);
-              setShuttles(defaultShuttles);
-            }
-          };
-          fetchShuttles();
+        onClick={async () => {
+          try {
+            const res = await fetch(`/api/shuttles`);
+            if (!res.ok) throw new Error("Failed to fetch shuttles");
+            const data = await res.json();
+            const shuttlesData = Array.isArray(data) ? data : data.shuttles || [];
+            setShuttles(
+              shuttlesData.length
+                ? shuttlesData.map((s) => ({ ...s, car: DEFAULT_CAR, path: s.path || [] }))
+                : defaultShuttles
+            );
+          } catch (err) {
+            console.warn("API error, using default shuttles:", err.message);
+            setShuttles(defaultShuttles);
+          }
         }}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
       >
@@ -340,75 +384,70 @@ const handleBooking = async (shuttle) => {
       </button>
     </div>
 
-    {/* Pick-up at Home Card */}
+    {/* Info Card */}
     <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-lg p-3 flex items-center gap-2 mb-4">
-      🚐 <span>Shuttle picks you up at your home and drops you at your destination.</span>
+      🚐 Shuttle picks you up at your home and drops you at your destination.
     </div>
 
-    {/* Shuttle List Container */}
-    <div className="flex flex-col space-y-4 bg-white p-4 rounded-lg shadow-md">
+    {/* Shuttle List */}
+    <div className="flex flex-col space-y-4">
       {shuttles.map((shuttle) => {
         const seats = seatsSelection[shuttle.id] || 1;
-        const price = Number(shuttle.price) || 300; // Default to 300 as per example
-
-        // Parse route: assume "From → To"
+        const price = Number(shuttle.price) || 300;
         const [from, to] = shuttle.route ? shuttle.route.split("→").map(s => s.trim()) : ["17 Thabo Mbeki St, Polokwane", "Pretoria Luxury Coach Terminal"];
-
-        // Assume departure time, calculate arrival (add 4h 5m)
         const depTime = shuttle.time || "9:35am";
-        const arrTime = "1:40pm"; // Placeholder, in real app calculate
-
-        // Duration
+        const arrTime = "1:40pm";
         const duration = "4h 5m";
-
-        // Company
         const company = "CITILINER PLUS";
+        const isActiveBooking = bookingLoading && bookingShuttleId === shuttle.id; // Only active shuttle shows progress
 
         return (
           <div
             key={shuttle.id}
-            className="bg-white border border-gray-200 rounded-lg p-2 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 w-full"
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 w-full"
           >
-            {/* Top: Company Logo + Name */}
-            <div className="flex items-center gap-1 mb-1">
-              <img src="/src/assets/react.svg" alt="Logo" className="w-4 h-4" /> {/* Placeholder logo */}
-              <span className="font-semibold text-gray-800 text-sm">{company}</span>
+            {/* Company */}
+            <div className="flex items-center gap-2 mb-2">
+              <img src="/src/assets/react.svg" alt="Logo" className="w-5 h-5" />
+              <span className="font-semibold text-gray-800">{company}</span>
             </div>
 
-            {/* Departure and Arrival Times */}
-            <div className="flex items-center justify-between mb-1">
+            {/* Times */}
+            <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-bold text-gray-900">{depTime}</span>
-              <span className="text-gray-500 text-xs">→</span>
+              <span className="text-gray-400 text-xs">→</span>
               <span className="text-sm font-bold text-gray-900">{arrTime}</span>
             </div>
 
-            {/* Departure & Arrival Locations */}
-            <div className="text-xs text-gray-600 mb-1">
+            {/* Locations */}
+            <div className="text-xs text-gray-600 mb-2">
               <p>From: {from}</p>
               <p>To: {to}</p>
             </div>
 
-            {/* Transport Type & Duration */}
+            {/* Duration & Seats */}
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-700">🚌 Bus | {duration}</span>
               <div className="flex">
-                {Array.from({ length: seats }, (_, i) => <span key={i} className="text-gray-500 text-xs">👤</span>)}
+                {Array.from({ length: seats }, (_, i) => (
+                  <span key={i} className="text-gray-500 text-xs">👤</span>
+                ))}
               </div>
             </div>
 
-            {/* Price Tag Button */}
-            <div className="flex justify-end mb-1">
+            {/* Price & Booking Button */}
+            <div className="flex justify-between items-center mb-2">
               <button
                 onClick={() => handleBooking(shuttle)}
                 disabled={bookingLoading}
-                className="bg-orange-500 text-white font-semibold py-1 px-2 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs disabled:opacity-50"
+                className="bg-orange-500 text-white font-semibold py-1 px-3 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs disabled:opacity-50"
               >
-                {bookingLoading ? "Booking..." : `R${price} →`}
+                {bookingLoading && isActiveBooking ? "Booking..." : `R${price} →`}
               </button>
             </div>
 
-            {/* Progress Bar */}
-            {bookingLoading && (
+            {/* Only show progress bar if this shuttle is being booked */}
+            {isActiveBooking && (
               <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
@@ -417,7 +456,7 @@ const handleBooking = async (shuttle) => {
               </div>
             )}
 
-            {/* Inputs (minimal) */}
+            {/* Seats Input */}
             <div className="space-y-1 text-xs">
               <input
                 type="number"
@@ -428,7 +467,6 @@ const handleBooking = async (shuttle) => {
                 className="border border-gray-200 rounded p-1 w-full"
                 placeholder="Seats"
               />
-              {/* Phone is now extracted from localStorage, no input needed */}
             </div>
           </div>
         );
@@ -436,6 +474,7 @@ const handleBooking = async (shuttle) => {
     </div>
   </section>
 )}
+
 
 
         {activeTab === "bookings" && <Bookings />}

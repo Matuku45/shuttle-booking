@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; 
 import { FaMapMarkerAlt, FaRoute, FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -6,14 +6,69 @@ import { useNavigate } from "react-router-dom";
 const LocationForm = () => {
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
+  const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (fromLocation && toLocation) {
-      navigate("/directions", { state: { fromLocation, toLocation } });
+  // Load email from localStorage (user info from login)
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.email) {
+      setEmail(user.email);
     }
+
+    // Optional: populate previous locations if available
+    const savedLocation = JSON.parse(localStorage.getItem("locationForm"));
+    if (savedLocation) {
+      setFromLocation(savedLocation.fromLocation || "");
+      setToLocation(savedLocation.toLocation || "");
+    }
+  }, []);
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!fromLocation || !toLocation) {
+    alert("Please fill in both pickup and destination locations.");
+    return;
+  }
+
+  const locationFormData = {
+    id: Math.floor(Math.random() * 1000000), // random id for backend
+    fromLocation,
+    toLocation,
+    email,
   };
+
+  try {
+    // 1️⃣ Save to backend
+    const response = await fetch(
+      "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/locationform",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(locationFormData),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Backend error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Location saved to backend:", result);
+
+    // 2️⃣ Save to localStorage
+    localStorage.setItem("locationForm", JSON.stringify(locationFormData));
+    console.log("Location saved to localStorage:", locationFormData);
+
+    // 3️⃣ Redirect to payment page
+    window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+  } catch (err) {
+    console.error("Location save error:", err.message);
+    alert("Failed to save location. Please try again.");
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-sky-100 to-blue-200 p-6">
@@ -94,7 +149,8 @@ const LocationForm = () => {
           transition={{ delay: 1 }}
           className="mt-6 text-center text-gray-500 text-sm"
         >
-          🚐 Safe & Comfortable Ride — powered by <span className="text-blue-600 font-semibold">ShuttleGo</span>
+          🚐 Safe & Comfortable Ride — powered by{" "}
+          <span className="text-blue-600 font-semibold">ShuttleGo</span>
         </motion.div>
       </motion.div>
     </div>
