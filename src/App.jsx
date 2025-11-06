@@ -13,6 +13,9 @@ import Terms from "./pages/Terms";
 import Location from "./pages/location"; // ✅ Fixed import name
 import CityTransfer from "./pages/city-transfer"; // ✅ Added import
 import LocationForm from "./pages/LocationForm"; // ✅ Added import
+import ViewAllLocations from "./pages/ViewAllLocations";
+import ViewAllLocations from "./ViewAllLocations"; // ✅ Import ViewAllLocations
+
 function App() {
   return (
     <Router>
@@ -31,6 +34,7 @@ function App() {
             <Route path="/location" element={<Location />} /> {/* ✅ Added route */}
             <Route path="/city-transfer" element={<CityTransfer />} /> {/* ✅ Added route */}
             <Route path="/location-form" element={<LocationForm />} /> {/* ✅ Added route */} 
+            <Route path="/view-locations" element={<ViewAllLocations />} /> {/* ✅ Added route */}
           </Routes>
         </main>
 
