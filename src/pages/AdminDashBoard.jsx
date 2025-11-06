@@ -165,29 +165,30 @@ const AdminDashboard = () => {
         </div>
 <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
   {[
-    { key: "dashboard", label: "🏠 Dashboard", from: "from-blue-400", via: "via-blue-500", to: "to-blue-600" },
-    { key: "add-shuttle", label: "🚌 Add Shuttle", from: "from-red-400", via: "via-red-500", to: "to-red-600" },
-    { key: "all-shuttles", label: "🛫 View All Shuttles", from: "from-purple-400", via: "via-purple-500", to: "to-purple-600" },
-    { key: "cars", label: "🚗 View All Cars", from: "from-green-400", via: "via-green-500", to: "to-green-600" },
-    { key: "bookings", label: "📋 View All Bookings", from: "from-pink-400", via: "via-pink-500", to: "to-pink-600" },
-    { key: "payments", label: "💳 Payments", from: "from-yellow-400", via: "via-yellow-500", to: "to-yellow-600" },
-  ].map((btn) => (
-    <button
-      key={btn.key}
-      onClick={() => {
-        setActiveTab(btn.key);
-        setSidebarOpen(false); // Close sidebar on mobile after selection
-      }}
-      className={`w-full text-left px-4 py-2 rounded-lg font-semibold shadow-md transition
-        ${
-          activeTab === btn.key
-            ? `bg-gradient-to-r ${btn.from} ${btn.via} ${btn.to} text-black`
-            : `bg-gradient-to-r ${btn.from} ${btn.via} ${btn.to} text-white hover:brightness-110`
-        }`}
-    >
-      {btn.label}
-    </button>
-  ))}
+  { key: "dashboard", label: "🏠 Dashboard", from: "from-blue-400", via: "via-blue-500", to: "to-blue-600" },
+  { key: "add-shuttle", label: "🚌 Add Shuttle", from: "from-red-400", via: "via-red-500", to: "to-red-600" },
+  { key: "all-shuttles", label: "🛫 View All Shuttles", from: "from-purple-400", via: "via-purple-500", to: "to-purple-600" },
+  { key: "cars", label: "🚗 View All Cars", from: "from-green-400", via: "via-green-500", to: "to-green-600" },
+  { key: "bookings", label: "📋 View All Bookings", from: "from-pink-400", via: "via-pink-500", to: "to-pink-600" },
+  { key: "payments", label: "💳 Payments", from: "from-yellow-400", via: "via-yellow-500", to: "to-yellow-600" },
+  { key: "view-locations", label: "📍 View Locations", from: "from-indigo-400", via: "via-indigo-500", to: "to-indigo-600" }, // ✅ New tab
+].map((btn) => (
+  <button
+    key={btn.key}
+    onClick={() => {
+      setActiveTab(btn.key);
+      setSidebarOpen(false); // Close sidebar on mobile after selection
+    }}
+    className={`w-full text-left px-4 py-2 rounded-lg font-semibold shadow-md transition
+      ${
+        activeTab === btn.key
+          ? `bg-gradient-to-r ${btn.from} ${btn.via} ${btn.to} text-black`
+          : `bg-gradient-to-r ${btn.from} ${btn.via} ${btn.to} text-white hover:brightness-110`
+      }`}
+  >
+    {btn.label}
+  </button>
+))}
 
   <a
     href="/login"
