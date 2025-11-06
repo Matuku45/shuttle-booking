@@ -477,6 +477,9 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
   </section>
 )}
 
+        {activeTab === "bookings" && <Bookings />}
+        {activeTab === "terms" && <Terms />}
+        {activeTab === "payments" && <TrackPayment passengerName={user.name} />}
 
 {activeTab === "profile" && (
   <motion.section
