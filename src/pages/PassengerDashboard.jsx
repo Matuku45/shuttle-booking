@@ -268,7 +268,7 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
 
     setBookingProgress(100);
 
-    alert("Booking and payment successful!");
+    alert("Booking On Pending and Redirecting to payment to pay");
     window.location.href = "/location-form";
 
   } catch (err) {
@@ -404,73 +404,74 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
         const isActiveBooking = bookingLoading && bookingShuttleId === shuttle.id; // Only active shuttle shows progress
 
         return (
-          <div
-            key={shuttle.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 w-full"
-          >
-            {/* Company */}
-            <div className="flex items-center gap-2 mb-2">
-              <img src="/src/assets/react.svg" alt="Logo" className="w-5 h-5" />
-              <span className="font-semibold text-gray-800">{company}</span>
-            </div>
+    <div
+  key={shuttle.id}
+  className="bg-white border border-gray-200 rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 w-full max-w-md mx-auto"
+>
+  {/* Company */}
+  <div className="flex items-center gap-2 mb-3">
+    <img src="/src/assets/react.svg" alt="Logo" className="w-6 h-6" />
+    <span className="font-semibold text-gray-800 text-sm">{company}</span>
+  </div>
 
-            {/* Times */}
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-bold text-gray-900">{depTime}</span>
-              <span className="text-gray-400 text-xs">→</span>
-              <span className="text-sm font-bold text-gray-900">{arrTime}</span>
-            </div>
+  {/* Times */}
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-sm font-bold text-gray-900">{depTime}</span>
+    <span className="text-gray-400 text-xs">→</span>
+    <span className="text-sm font-bold text-gray-900">{arrTime}</span>
+  </div>
 
-            {/* Locations */}
-            <div className="text-xs text-gray-600 mb-2">
-              <p>From: {from}</p>
-              <p>To: {to}</p>
-            </div>
+  {/* Locations */}
+  <div className="text-xs text-gray-600 mb-3">
+    <p>From: <span className="font-medium">{from}</span></p>
+    <p>To: <span className="font-medium">{to}</span></p>
+  </div>
 
-            {/* Duration & Seats */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-700">🚌 Bus | {duration}</span>
-              <div className="flex">
-                {Array.from({ length: seats }, (_, i) => (
-                  <span key={i} className="text-gray-500 text-xs">👤</span>
-                ))}
-              </div>
-            </div>
+  {/* Duration & Seats */}
+  <div className="flex items-center justify-between mb-3">
+    <span className="text-xs text-gray-700">🚌 Bus | {duration}</span>
+    <div className="flex gap-1">
+      {Array.from({ length: seats }, (_, i) => (
+        <span key={i} className="text-gray-500 text-xs animate-pulse">👤</span>
+      ))}
+    </div>
+  </div>
 
-            {/* Price & Booking Button */}
-            <div className="flex justify-between items-center mb-2">
-              <button
-                onClick={() => handleBooking(shuttle)}
-                disabled={bookingLoading}
-                className="bg-orange-500 text-white font-semibold py-1 px-3 rounded-full shadow-sm hover:bg-orange-600 transition hover:scale-105 text-xs disabled:opacity-50"
-              >
-                {bookingLoading && isActiveBooking ? "Booking..." : `R${price} →`}
-              </button>
-            </div>
+  {/* Seats Input */}
+  <div className="mb-3 space-y-1 text-xs">
+    <input
+      type="number"
+      min="1"
+      max={DEFAULT_CAR.seats}
+      value={seats}
+      onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
+      className="border border-gray-200 rounded p-1 w-full"
+      placeholder="Enter number of seats"
+    />
+  </div>
 
-            {/* Only show progress bar if this shuttle is being booked */}
-            {isActiveBooking && (
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${bookingProgress}%` }}
-                ></div>
-              </div>
-            )}
+  {/* Price & Booking Button */}
+  <div className="flex justify-between items-center mb-3">
+    <button
+      onClick={() => handleBooking(shuttle)}
+      disabled={bookingLoading}
+      className="bg-orange-500 text-white font-semibold py-2 px-4 rounded-full shadow-sm hover:bg-orange-600 transition transform hover:scale-105 text-sm disabled:opacity-50"
+    >
+      {bookingLoading && isActiveBooking ? "Booking..." : `R${price} →`}
+    </button>
+  </div>
 
-            {/* Seats Input */}
-            <div className="space-y-1 text-xs">
-              <input
-                type="number"
-                min="1"
-                max={DEFAULT_CAR.seats}
-                value={seats}
-                onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
-                className="border border-gray-200 rounded p-1 w-full"
-                placeholder="Seats"
-              />
-            </div>
-          </div>
+  {/* Booking Progress Slider (Only shows after booking starts) */}
+  {isActiveBooking && (
+    <div className="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
+      <div
+        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
+        style={{ width: `${bookingProgress}%` }}
+      ></div>
+    </div>
+  )}
+</div>
+
         );
       })}
     </div>
