@@ -35,13 +35,13 @@ const SignUp = () => {
 
     const combinedPhone = `${formData.phone}|${formData.whatsapp}`;
 
-    const payload = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      phone: combinedPhone,
-      role: formData.role,
-    };
+const payload = {
+  name: formData.name,
+  email: formData.email,
+  password: formData.password,
+  phone: combinedPhone,
+  role: formData.role || "passenger", // ensures passenger by default
+};
 
     console.log("Sending body:", payload);
 
@@ -184,7 +184,7 @@ const SignUp = () => {
             required
             className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Passenger</option>
+            <option value="passenger">Passenger</option>
             
           </select>
 

@@ -213,12 +213,11 @@ const handleBooking = async (shuttle) => {
     };
 
     // Send booking to backend
-const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(bookingPayload),
-});
-
+    const bookingRes = await fetch(`${PAYMENT_BASE}/api/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookingPayload),
+    });
 
     if (!bookingRes.ok) throw new Error(`Booking API failed: ${bookingRes.status}`);
 
