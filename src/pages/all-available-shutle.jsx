@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from "react";
+// src/pages/AdminDashboard.jsx
+
+import AddShuttle from "./add-shutle";
+import AllCars from "./AllCars";
+import AllBookings from "./AllBookings";
+
+
+import ViewAllLocations from "./ViewAllLocations";
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
