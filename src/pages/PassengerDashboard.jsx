@@ -7,6 +7,8 @@ import Bookings from "./bookings";
 import Payment from "../components/payment";
 import Terms from "./Terms";
 import "../pages/LocationForm.jsx"
+import { FaUser, FaEnvelope, FaPhone, FaWhatsapp } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 // Fix default Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -213,11 +215,12 @@ const handleBooking = async (shuttle) => {
     };
 
     // Send booking to backend
-    const bookingRes = await fetch(`${PAYMENT_BASE}/api/bookings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bookingPayload),
-    });
+const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(bookingPayload),
+});
+
 
     if (!bookingRes.ok) throw new Error(`Booking API failed: ${bookingRes.status}`);
 
@@ -475,18 +478,76 @@ const handleBooking = async (shuttle) => {
 )}
 
 
+{activeTab === "profile" && (
+  <motion.section
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    className="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen p-10"
+  >
+    <div className="max-w-3xl mx-auto">
+      <h2 className="text-4xl font-extrabold mb-8 text-blue-800 flex items-center gap-3">
+        <FaUser /> My Profile
+      </h2>
 
-        {activeTab === "bookings" && <Bookings />}
-        {activeTab === "terms" && <Terms />}
-        {activeTab === "payments" && <TrackPayment passengerName={user.name} />}
-        {activeTab === "profile" && (
-          <section className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">👤 My Profile</h2>
-            <p>Name: {user.name}</p>
-            <p>Email: {user.email || "Not provided"}</p>
-            <p>Phone: {user.phone || "Not provided"}</p>
-          </section>
-        )}
+      <div className="space-y-6">
+
+        {/* Name */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-4 bg-white rounded-2xl shadow-lg p-6"
+        >
+          <FaUser className="text-blue-500 text-2xl" />
+          <div>
+            <p className="text-gray-600 text-sm">Full Name</p>
+            <p className="font-semibold text-gray-800 text-lg">{user.name}</p>
+          </div>
+        </motion.div>
+
+        {/* Email */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-4 bg-white rounded-2xl shadow-lg p-6"
+        >
+          <FaEnvelope className="text-green-500 text-2xl" />
+          <div>
+            <p className="text-gray-600 text-sm">Email</p>
+            <p className="font-semibold text-gray-800 text-lg">{user.email || "Not provided"}</p>
+          </div>
+        </motion.div>
+
+        {/* Cell Number */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-4 bg-white rounded-2xl shadow-lg p-6"
+        >
+          <FaPhone className="text-blue-700 text-2xl" />
+          <div>
+            <p className="text-gray-600 text-sm">Cell Number</p>
+            <p className="font-semibold text-gray-800 text-lg">
+              {user.phone?.split("|")[0] || "Not provided"}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* WhatsApp Number */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-4 bg-white rounded-2xl shadow-lg p-6"
+        >
+          <FaWhatsapp className="text-green-600 text-2xl" />
+          <div>
+            <p className="text-gray-600 text-sm">WhatsApp Number</p>
+            <p className="font-semibold text-gray-800 text-lg">
+              {user.phone?.split("|")[1] || "Not provided"}
+            </p>
+          </div>
+        </motion.div>
+
+      </div>
+    </div>
+  </motion.section>
+)}
       </main>
     </div>
   );
