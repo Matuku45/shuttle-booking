@@ -175,12 +175,53 @@ const AllBookings = () => {
                   </p>
 
                   {/* ADDRESSES */}
-                  <p className="text-sm flex items-center gap-2">
-                    <FaGlobeAfrica /> From: {bookingLocation?.fromLocation || "null"}
-                  </p>
-                  <p className="text-sm flex items-center gap-2">
-                    <FaGlobeAfrica /> To: {bookingLocation?.toLocation || "null"}
-                  </p>
+                  <label className="block text-sm font-semibold">From Address:</label>
+                  {editingBooking?.id === b.id ? (
+                    <input
+                      type="text"
+                      value={bookingLocation?.fromLocation || ""}
+                      onChange={(e) => {
+                        setLocations((prev) =>
+                          prev.map((loc) =>
+                            loc.email.toLowerCase() === b.email.toLowerCase()
+                              ? { ...loc, fromLocation: e.target.value }
+                              : loc
+                          )
+                        );
+                        handleFieldChange(e, b, "from");
+                      }}
+                      placeholder="Street, City, Postal Code, Country"
+                      className="border border-gray-300 rounded-md p-2 w-full text-black"
+                    />
+                  ) : (
+                    <p className="text-sm flex items-center gap-2">
+                      <FaGlobeAfrica /> From: {bookingLocation?.fromLocation || "null"}
+                    </p>
+                  )}
+
+                  <label className="block text-sm font-semibold">To Address:</label>
+                  {editingBooking?.id === b.id ? (
+                    <input
+                      type="text"
+                      value={bookingLocation?.toLocation || ""}
+                      onChange={(e) => {
+                        setLocations((prev) =>
+                          prev.map((loc) =>
+                            loc.email.toLowerCase() === b.email.toLowerCase()
+                              ? { ...loc, toLocation: e.target.value }
+                              : loc
+                          )
+                        );
+                        handleFieldChange(e, b, "to");
+                      }}
+                      placeholder="Street, City, Postal Code, Country"
+                      className="border border-gray-300 rounded-md p-2 w-full text-black"
+                    />
+                  ) : (
+                    <p className="text-sm flex items-center gap-2">
+                      <FaGlobeAfrica /> To: {bookingLocation?.toLocation || "null"}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between mt-4 gap-3">
