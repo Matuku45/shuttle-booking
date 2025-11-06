@@ -14,7 +14,7 @@ import Location from "./pages/location"; // ✅ Fixed import name
 import CityTransfer from "./pages/city-transfer"; // ✅ Added import
 import LocationForm from "./pages/LocationForm"; // ✅ Added import
 import ViewAllLocations from "./pages/ViewAllLocations";
-import ViewAllLocations from "./ViewAllLocations"; // ✅ Import ViewAllLocations
+
 
 function App() {
   return (

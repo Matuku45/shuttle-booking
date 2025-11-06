@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import AddShuttle from "./add-shutle";
 import AllCars from "./AllCars";
 import AllBookings from "./AllBookings"; // ✅ Import AllBookings component
-import AllShuttles from "./all-available-shutle";
+import ViewAllLocations from "./ViewAllLocations";
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
@@ -58,93 +58,97 @@ const AdminDashboard = () => {
     setShowAddModal(false);
   };
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return (
-          <div className="p-6 text-center">
-            <h2 className="text-2xl font-bold mb-2">Welcome, {user.username}</h2>
-            <p className="text-gray-600 font-medium">
-              Use the sidebar to manage shuttles, cars, bookings, and payments.
-            </p>
-          </div>
-        );
+const renderTab = () => {
+  switch (activeTab) {
+    case "dashboard":
+      return (
+        <div className="p-6 text-center">
+          <h2 className="text-2xl font-bold mb-2">Welcome, {user.username}</h2>
+          <p className="text-gray-600 font-medium">
+            Use the sidebar to manage shuttles, cars, bookings, payments, and locations.
+          </p>
+        </div>
+      );
 
-      case "add-shuttle":
-        return (
-          <div className="p-4">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-yellow-500 text-black font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600"
-            >
-              ➕ Add New Shuttle
-            </button>
+    case "add-shuttle":
+      return (
+        <div className="p-4">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-yellow-500 text-black font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600"
+          >
+            ➕ Add New Shuttle
+          </button>
 
-            {/* Modal for Add Shuttle */}
-            {showAddModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-lg max-w-md w-full overflow-y-auto max-h-[90vh] p-6">
-                  <AddShuttle
-                    title="Add Shuttle"
-                    onClose={() => setShowAddModal(false)}
-                    onSubmit={handleShuttleAdded}
-                  />
-                </div>
+          {/* Modal for Add Shuttle */}
+          {showAddModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-lg max-w-md w-full overflow-y-auto max-h-[90vh] p-6">
+                <AddShuttle
+                  title="Add Shuttle"
+                  onClose={() => setShowAddModal(false)}
+                  onSubmit={handleShuttleAdded}
+                />
               </div>
-            )}
-          </div>
-        );
+            </div>
+          )}
+        </div>
+      );
 
-      case "all-shuttles":
-        return <AllShuttles shuttles={shuttles} setShuttles={setShuttles} />;
+    case "all-shuttles":
+      return <AllShuttles shuttles={shuttles} setShuttles={setShuttles} />;
 
-      case "cars":
-        return <AllCars />;
+    case "cars":
+      return <AllCars />;
 
-      case "bookings": // ✅ New tab for AllBookings
-        return <AllBookings />;
+    case "bookings":
+      return <AllBookings />;
 
-      case "payments":
-        return (
-          <section className="bg-white p-6 rounded-lg shadow overflow-x-auto">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">💳 Paid Payments</h2>
-            {payments.length === 0 ? (
-              <p className="text-gray-600">No paid payments found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-gray-900 text-sm">
-                  <thead className="bg-yellow-400 text-black">
-                    <tr>
-                      <th className="p-2 border">Passenger</th>
-                      <th className="p-2 border">Booking ID</th>
-                      <th className="p-2 border">Amount (R)</th>
-                      <th className="p-2 border">Status</th>
-                      <th className="p-2 border">Date</th>
+    case "payments":
+      return (
+        <section className="bg-white p-6 rounded-lg shadow overflow-x-auto">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">💳 Paid Payments</h2>
+          {payments.length === 0 ? (
+            <p className="text-gray-600">No paid payments found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border text-gray-900 text-sm">
+                <thead className="bg-yellow-400 text-black">
+                  <tr>
+                    <th className="p-2 border">Passenger</th>
+                    <th className="p-2 border">Booking ID</th>
+                    <th className="p-2 border">Amount (R)</th>
+                    <th className="p-2 border">Status</th>
+                    <th className="p-2 border">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((p, i) => (
+                    <tr key={i} className="odd:bg-gray-50 even:bg-white">
+                      <td className="p-2 border">{p.passenger_name}</td>
+                      <td className="p-2 border">{p.booking_id}</td>
+                      <td className="p-2 border font-bold text-green-700">{p.amount}</td>
+                      <td className="p-2 border">{p.status}</td>
+                      <td className="p-2 border">
+                        {new Date(p.payment_date).toLocaleDateString()}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((p, i) => (
-                      <tr key={i} className="odd:bg-gray-50 even:bg-white">
-                        <td className="p-2 border">{p.passenger_name}</td>
-                        <td className="p-2 border">{p.booking_id}</td>
-                        <td className="p-2 border font-bold text-green-700">{p.amount}</td>
-                        <td className="p-2 border">{p.status}</td>
-                        <td className="p-2 border">
-                          {new Date(p.payment_date).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        );
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      );
 
-      default:
-        return null;
-    }
-  };
+    case "view-locations": // ✅ New tab for locations
+      return <ViewAllLocations />;
+
+    default:
+      return null;
+  }
+};
+
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
