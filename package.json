@@ -15,6 +15,7 @@
     "@stripe/stripe-js": "^8.0.0",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
+    "daisyui": "^5.4.5",
     "express": "^5.1.0",
     "framer-motion": "^12.23.24",
     "leaflet": "1.9",
