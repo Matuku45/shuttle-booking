@@ -12,7 +12,7 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Location from "./pages/location"; // ✅ Fixed import name
 import CityTransfer from "./pages/city-transfer"; // ✅ Added import
-
+import LocationForm from "./pages/LocationForm"; // ✅ Added import
 function App() {
   return (
     <Router>
@@ -30,6 +30,7 @@ function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/location" element={<Location />} /> {/* ✅ Added route */}
             <Route path="/city-transfer" element={<CityTransfer />} /> {/* ✅ Added route */}
+            <Route path="/location-form" element={<LocationForm />} /> {/* ✅ Added route */} 
           </Routes>
         </main>
 

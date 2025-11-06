@@ -6,6 +6,7 @@ import TrackPayment from "./track-payment";
 import Bookings from "./bookings";
 import Payment from "../components/payment";
 import Terms from "./Terms";
+import "../pages/LocationForm.jsx"
 
 // Fix default Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -161,6 +162,8 @@ const PassengerDashboard = () => {
     );
   };
 
+  
+
 const handleBooking = async (shuttle) => {
   const seats = seatsSelection[shuttle.id] || 1;
 
@@ -197,7 +200,6 @@ const handleBooking = async (shuttle) => {
       body: JSON.stringify(newBooking),
     });
 
-    // If backend fails (like 404), still continue
     if (!response.ok) {
       console.warn("Booking API error:", response.status);
       throw new Error("Booking API failed");
@@ -211,9 +213,8 @@ const handleBooking = async (shuttle) => {
     setBookingProgress(50);
   } catch (err) {
     console.error("Error sending booking to API:", err.message);
-    alert("Booking API not available, saving locally and proceeding to payment...");
+    alert("Booking API not available, saving locally and proceeding...");
   } finally {
-    // ✅ Always save booking locally
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
@@ -221,16 +222,16 @@ const handleBooking = async (shuttle) => {
 
     setBookingProgress(100);
 
-    // ✅ Always redirect to Stripe payment gateway automatically
+    // ✅ Redirect to your own success page instead of Stripe payment
     setTimeout(() => {
-      window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+      window.location.href = "/location-form"; // ← change this to your desired route
     }, 1000);
 
-    // Reset UI
     setBookingLoading(false);
     setBookingProgress(0);
   }
 };
+
 
 
 
