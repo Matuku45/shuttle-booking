@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // <-- import navigate
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserShield } from "react-icons/fa";
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -14,7 +16,7 @@ const SignUp = () => {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const navigate = useNavigate(); // <-- initialize navigate
+  const navigate = useNavigate();
 
   // Handle input changes
   const handleChange = (e) => {
@@ -31,7 +33,6 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!form.name || !form.email || !form.phone || !form.password || !form.repeatPassword || !form.role) {
       setError("Please fill in all fields.");
       return;
@@ -65,7 +66,6 @@ const SignUp = () => {
       if (data.success) {
         setSuccess(data.message);
         setError("");
-        // Reset form
         setForm({
           name: "",
           email: "",
@@ -75,8 +75,6 @@ const SignUp = () => {
           role: "",
           agree: false,
         });
-
-        // Redirect to login page after successful signup
         navigate("/login");
       } else {
         setError(data.message || "Something went wrong");
@@ -97,109 +95,149 @@ const SignUp = () => {
           "url('https://mdbcdn.b-cdn.net/img/Photos/new-templates/search-box/img4.webp')",
       }}
     >
-      <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl shadow-lg p-8 sm:p-10 w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl shadow-xl p-8 sm:p-10 w-full max-w-md backdrop-blur-md"
+      >
         <div className="text-center mb-6">
           <img
             src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/lotus.webp"
             alt="logo"
-            className="w-36 mx-auto sm:w-44"
+            className="w-32 mx-auto sm:w-44"
           />
-          <h4 className="mt-2 text-gray-700 text-lg sm:text-xl font-semibold">
+          <h4 className="mt-2 text-gray-700 text-base sm:text-lg font-semibold">
             We are The Lotus Team
           </h4>
         </div>
 
-        <h2 className="text-center text-blue-800 font-bold text-xl sm:text-2xl uppercase mb-8">
-          Create an account
+        <h2 className="text-center text-blue-800 font-bold text-xl sm:text-2xl uppercase mb-6">
+          Create an Account
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaUser className="inline mr-2 text-blue-700" /> Full Name
+          </label>
           <input
             type="text"
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Your Name"
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your full name"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          {/* Email */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaEnvelope className="inline mr-2 text-blue-700" /> Email Address
+          </label>
           <input
             type="email"
             name="email"
             value={form.email}
             onChange={handleChange}
-            placeholder="Your Email"
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your email"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          {/* Phone */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaPhone className="inline mr-2 text-blue-700" /> Phone Number
+          </label>
           <input
             type="tel"
             name="phone"
             value={form.phone}
             onChange={handleChange}
-            placeholder="Your Phone Number"
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your phone number"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          {/* Password */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaLock className="inline mr-2 text-blue-700" /> Password
+          </label>
           <input
             type="password"
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Password"
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter password"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          {/* Repeat Password */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaLock className="inline mr-2 text-blue-700" /> Confirm Password
+          </label>
           <input
             type="password"
             name="repeatPassword"
             value={form.repeatPassword}
             onChange={handleChange}
             placeholder="Repeat your password"
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          {/* Role */}
+          <label className="block text-gray-800 font-medium text-sm sm:text-base">
+            <FaUserShield className="inline mr-2 text-blue-700" /> Select Role
+          </label>
           <select
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="w-full p-3 border border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-blue-400 rounded-lg text-gray-800 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Select Role</option>
+            <option value="">-- Choose your role --</option>
             <option value="admin">Admin</option>
             <option value="passenger">Passenger</option>
           </select>
 
-          <div className="flex items-center">
+          {/* Agreement */}
+          <div className="flex items-start mt-2 space-x-2">
             <input
               type="checkbox"
               name="agree"
               checked={form.agree}
               onChange={handleChange}
               id="agree"
-              className="mr-2 w-4 h-4 text-blue-600 accent-blue-600"
+              className="w-4 h-4 mt-1 accent-blue-600"
             />
             <label htmlFor="agree" className="text-gray-700 text-sm sm:text-base">
               I agree to the{" "}
-              <a href="#!" className="text-blue-600 underline">
+              <a href="#!" className="text-blue-600 underline hover:text-blue-700">
                 Terms of service
               </a>
             </label>
           </div>
 
-          {error && <div className="text-red-600 text-center">{error}</div>}
-          {success && <div className="text-green-600 text-center">{success}</div>}
+          {/* Error or Success */}
+          {error && <div className="text-red-600 text-center font-medium">{error}</div>}
+          {success && <div className="text-green-600 text-center font-medium">{success}</div>}
 
-          <button
+          {/* Button */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="submit"
-            className="w-full bg-blue-700 text-white font-bold py-3 rounded-xl text-lg hover:bg-blue-800 transition-colors duration-200 shadow-md"
+            className="w-full bg-blue-700 text-white font-bold py-3 rounded-xl text-lg hover:bg-blue-800 transition-all duration-300 shadow-lg"
           >
             Register
-          </button>
+          </motion.button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6 text-sm sm:text-base">
+        {/* Footer */}
+        <p className="text-center text-gray-700 mt-6 text-sm sm:text-base">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 font-semibold underline">
+          <a href="/login" className="text-blue-600 font-semibold underline hover:text-blue-800">
             Login here
           </a>
         </p>
-      </div>
+      </motion.div>
     </section>
   );
 };
