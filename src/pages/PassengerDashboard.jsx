@@ -271,7 +271,7 @@ const handleBooking = async (shuttle) => {
 
     setBookingProgress(100);
 
-    alert(`Booking successful! Total: R${totalAmount.toFixed(2)} — Redirecting to payment page...`);
+    alert(`Booking In Pending! Total: R${totalAmount.toFixed(2)} — Redirecting to payment page...`);
     window.location.href = "/location-form";
 
   } catch (err) {
