@@ -104,6 +104,7 @@ const PassengerDashboard = () => {
 const savePayment = async (shuttle, seats, bookingId) => {
   try {
     const paymentData = {
+      
       passenger_name: user.name,
       passenger_phone: user.phone || "",
       shuttle_id: shuttle.id,
@@ -191,6 +192,9 @@ const handleBooking = async (shuttle) => {
   if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
   if (!user.email || !user.email.trim()) return alert("User email not found!");
 
+  // ✅ Calculate total amount correctly
+  const totalAmount = shuttle.price * seats;
+
   setBookingLoading(true);
   setBookingProgress(0);
 
@@ -199,7 +203,7 @@ const handleBooking = async (shuttle) => {
     await requestUserLocation();
     setBookingProgress(20);
 
-    // Create booking payload
+    // ✅ Create booking payload with correct total amount
     const bookingPayload = {
       shuttle_id: shuttle.id,
       passengerName: user.name,
@@ -209,42 +213,41 @@ const handleBooking = async (shuttle) => {
       date: shuttle.date,
       time: shuttle.time,
       seats,
-      price: shuttle.price * seats,
+      price: totalAmount, // ✅ fixed: total price now stored
       path: shuttle.path,
       car: DEFAULT_CAR.name,
     };
 
-    // Send booking to backend
-const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(bookingPayload),
-});
-
+    // ✅ Send booking to backend (removed /api as per your setup)
+    const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookingPayload),
+    });
 
     if (!bookingRes.ok) throw new Error(`Booking API failed: ${bookingRes.status}`);
 
     const bookingResult = await bookingRes.json();
     if (!bookingResult.success) throw new Error("Booking failed at API");
 
-    const savedBooking = bookingResult.booking; // ✅ Use this booking ID
+    const savedBooking = bookingResult.booking;
 
-    // Save booking locally
+    // ✅ Save booking locally
     const storedBookings = JSON.parse(localStorage.getItem("bookings")) || [];
     storedBookings.push(savedBooking);
     localStorage.setItem("bookings", JSON.stringify(storedBookings));
 
     setBookingProgress(50);
 
-    // Now make the payment
+    // ✅ Payment payload using the same total amount
     const paymentPayload = {
       passenger_name: user.name,
       passenger_phone: user.phone,
       shuttle_id: shuttle.id,
-      booking_id: savedBooking.id, // ✅ Use backend-generated ID
+      booking_id: savedBooking.id,
       seats,
-      amount: shuttle.price * seats,
-      status: "Paid",
+      amount: totalAmount, // ✅ same total as booking
+      status: "Booked", // better to mark as pending until confirmed
       payment_date: new Date().toISOString(),
       created_at: new Date().toISOString(),
       car: DEFAULT_CAR.name,
@@ -261,14 +264,14 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
     const paymentResult = await paymentRes.json();
     if (!paymentResult.success) throw new Error("Payment failed at API");
 
-    // Save payment locally
+    // ✅ Save payment locally
     const storedPayments = JSON.parse(localStorage.getItem("payments")) || [];
     storedPayments.push(paymentResult.payment);
     localStorage.setItem("payments", JSON.stringify(storedPayments));
 
     setBookingProgress(100);
 
-    alert("Booking On Pending and Redirecting to payment to pay");
+    alert(`Booking successful! Total: R${totalAmount.toFixed(2)} — Redirecting to payment page...`);
     window.location.href = "/location-form";
 
   } catch (err) {
