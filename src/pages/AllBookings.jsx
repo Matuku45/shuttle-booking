@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
+import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope, FaWhatsapp } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
@@ -120,7 +120,15 @@ const AllBookingsAdmin = () => {
 
                 <div className="my-3 space-y-2 text-white">
                   <p><span className="font-semibold">Seats:</span> {b.seats}</p>
-                  <p className="flex items-center gap-2"><FaPhone /> {b.phone}</p>
+
+                  {/* Phone & WhatsApp */}
+                  <p className="flex items-center gap-2">
+                    <FaPhone /> Call: {b.phone}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <FaWhatsapp /> WhatsApp: {b.phone}
+                  </p>
+
                   <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
                   <p className="flex items-center gap-2 text-sm"><FaEnvelope /> {b.email}</p>
 
@@ -132,7 +140,6 @@ const AllBookingsAdmin = () => {
                   </p>
                 </div>
 
-                {/* Admin-only location access */}
                 <button
                   onClick={goToLocation}
                   className="mt-4 w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base flex items-center justify-center gap-2"
