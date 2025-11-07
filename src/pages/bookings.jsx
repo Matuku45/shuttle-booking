@@ -96,8 +96,8 @@ const handleUpdateBooking = async (booking) => {
     shuttle_id: booking.shuttle_id || booking.id,
     booking_id: booking.id,
     seats: booking.seats,
-    amount: totalAmount,
-    status: "Booked",
+    amount: totalAmount, // total updated price
+    status: `Booking updated - total R${totalAmount}`, // descriptive status
     car: booking.car,
   };
 
@@ -114,9 +114,8 @@ const handleUpdateBooking = async (booking) => {
     console.log("Payment saved successfully!");
 
     // Redirect to Stripe checkout AFTER saving
-    alert(`✅ Booking updated! Proceed to payment of R${totalAmount}.`);
+    alert(`✅ Booking updated! Please proceed to payment of R${totalAmount}.`);
     window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-
   } catch (err) {
     console.error("Error saving payment:", err);
     alert("⚠️ Failed to save payment. Try again!");
@@ -130,20 +129,20 @@ const handleDeleteBooking = async (booking) => {
 
   const chargeAmount = booking.price / 2; // 50% charge
 
-  // Prepare the same payment payload structure
+  // Prepare the payment payload
   const paymentPayload = {
     passenger_name: booking.passengerName,
     passenger_phone: booking.phone,
     shuttle_id: booking.id,
     booking_id: booking.id,
     seats: booking.seats,
-    amount: chargeAmount,
-    status: "Cancelled", // mark it as cancelled/deleted
+    amount: booking.price, // total booking price
+    status: `Cancelled - charged 50%: R${chargeAmount}`, // descriptive status
     car: booking.car,
   };
 
   try {
-    // Save deletion payment to API
+    // Save deletion charge to API
     await fetch(`${BASE_URL}/api/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -162,6 +161,7 @@ const handleDeleteBooking = async (booking) => {
     alert("⚠️ Failed to save deletion charge. Try again!");
   }
 };
+
 
 
   if (loading)

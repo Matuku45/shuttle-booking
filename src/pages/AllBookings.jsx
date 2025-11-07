@@ -13,28 +13,27 @@ const AllBookingsAdmin = () => {
 
   const normalizeBooking = (b) => ({
     ...b,
-    from: b.route?.split(/->|→/)[0]?.trim() || "",
-    to: b.route?.split(/->|→/)[1]?.trim() || "",
+    from: b.from || b.route?.split(/->|→/)[0]?.trim() || "",
+    to: b.to || b.route?.split(/->|→/)[1]?.trim() || "",
+    fromLocation: b.fromLocation || "",
+    toLocation: b.toLocation || "",
   });
 
-  // Load bookings from localStorage
-  useEffect(() => {
-    const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
-    setBookings(localBookings.map(normalizeBooking));
-  }, []);
-
-  // Fetch bookings from API
+  // Load local and API bookings
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
         const res = await fetch(`${BASE_URL}/api/bookings`);
         const data = await res.json();
-        if (data.success && Array.isArray(data.bookings)) {
-          setBookings((prev) => [
-            ...prev,
-            ...data.bookings.map(normalizeBooking),
-          ]);
-        }
+
+        const allBookings = [
+          ...localBookings.map(normalizeBooking),
+          ...(data.success && Array.isArray(data.bookings)
+            ? data.bookings.map(normalizeBooking)
+            : []),
+        ];
+        setBookings(allBookings);
       } catch (err) {
         console.error("Error fetching bookings:", err);
       } finally {
@@ -64,14 +63,10 @@ const AllBookingsAdmin = () => {
       const newTimers = {};
       bookings.forEach((b) => {
         const diff = new Date(b.date).getTime() - new Date().getTime();
-        if (diff > 0) {
-          const h = Math.floor(diff / 3600000);
-          const m = Math.floor((diff % 3600000) / 60000);
-          const s = Math.floor((diff % 60000) / 1000);
-          newTimers[b.id] = `${h}h ${m}m ${s}s`;
-        } else {
-          newTimers[b.id] = "Time passed";
-        }
+        newTimers[b.id] =
+          diff > 0
+            ? `${Math.floor(diff / 3600000)}h ${Math.floor((diff % 3600000) / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
+            : "Time passed";
       });
       setTimers(newTimers);
     }, 1000);
@@ -99,10 +94,10 @@ const AllBookingsAdmin = () => {
           No bookings available.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {bookings.map((b) => {
             const bookingLocation = locations.find(
-              (loc) => loc.email.toLowerCase() === b.email.toLowerCase()
+              (loc) => loc.email?.toLowerCase() === b.email?.toLowerCase()
             );
 
             return (
@@ -129,8 +124,12 @@ const AllBookingsAdmin = () => {
                   <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
                   <p className="flex items-center gap-2 text-sm"><FaEnvelope /> {b.email}</p>
 
-                  <p className="text-sm flex items-center gap-2"><FaGlobeAfrica /> From: {bookingLocation?.fromLocation || b.from}</p>
-                  <p className="text-sm flex items-center gap-2"><FaGlobeAfrica /> To: {bookingLocation?.toLocation || b.to}</p>
+                  <p className="text-sm flex items-center gap-2">
+                    <FaGlobeAfrica /> From: {bookingLocation?.fromLocation || b.from}
+                  </p>
+                  <p className="text-sm flex items-center gap-2">
+                    <FaGlobeAfrica /> To: {bookingLocation?.toLocation || b.to}
+                  </p>
                 </div>
 
                 <button
