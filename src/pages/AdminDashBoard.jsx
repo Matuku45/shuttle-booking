@@ -5,6 +5,7 @@ import AllShuttles from "./all-available-shutle"; // ✅ Import AllShuttles comp
 import AllCars from "./AllCars";
 import AllBookings from "./AllBookings";
 import ViewAllLocations from "./ViewAllLocations";
+import TrackAllPayment from "./track-all-payment"; // adjust path if needed
 
 const BASE_URL = "https://shuttle-booking-system.fly.dev";
 
@@ -111,42 +112,9 @@ const AdminDashboard = () => {
       case "bookings":
         return <AllBookings />;
 
-      case "payments":
-        return (
-          <section className="bg-white p-6 rounded-lg shadow overflow-x-auto">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">💳 Paid Payments</h2>
-            {payments.length === 0 ? (
-              <p className="text-gray-600">No paid payments found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-gray-900 text-sm">
-                  <thead className="bg-yellow-400 text-black">
-                    <tr>
-                      <th className="p-2 border">Passenger</th>
-                      <th className="p-2 border">Booking ID</th>
-                      <th className="p-2 border">Amount (R)</th>
-                      <th className="p-2 border">Status</th>
-                      <th className="p-2 border">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((p, i) => (
-                      <tr key={i} className="odd:bg-gray-50 even:bg-white">
-                        <td className="p-2 border">{p.passenger_name}</td>
-                        <td className="p-2 border">{p.booking_id}</td>
-                        <td className="p-2 border font-bold text-green-700">{p.amount}</td>
-                        <td className="p-2 border">{p.status}</td>
-                        <td className="p-2 border">
-                          {new Date(p.payment_date).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        );
+case "payments":
+  return <TrackAllPayment />;
+
 
       case "view-locations":
         return <ViewAllLocations />;
