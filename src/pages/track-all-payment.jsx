@@ -14,7 +14,6 @@ const TrackAllPayment = () => {
       try {
         const res = await fetch(`${BASE_URL}/api/payments`);
         const data = await res.json();
-
         if (data.success && Array.isArray(data.payments)) {
           setPayments(data.payments);
         } else {
@@ -27,7 +26,6 @@ const TrackAllPayment = () => {
         setLoading(false);
       }
     };
-
     fetchPayments();
   }, []);
 
@@ -71,11 +69,11 @@ const TrackAllPayment = () => {
           {payments.map((p) => (
             <div
               key={p.id}
-              className="card bg-base-200 shadow-xl border-l-4 border-primary transition-transform transform hover:scale-105"
+              className="card bg-base-200 shadow-xl border-l-4 border-primary hover:shadow-2xl transition-transform transform hover:scale-105"
             >
               <div className="card-body">
-                <div className="flex justify-between items-center">
-                  <h3 className="card-title text-primary">{p.userName}</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="card-title text-primary font-bold">{p.userName}</h3>
                   <span className="badge badge-primary gap-2 flex items-center">
                     <FaClock /> {timers[p.id]}
                   </span>
@@ -93,10 +91,14 @@ const TrackAllPayment = () => {
                   <FaCheckCircle /> Status: <span className="font-semibold">{p.status}</span>
                 </p>
 
-                <p className="text-sm text-gray-500">Payment Date: {new Date(p.date).toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Payment Date: {new Date(p.date).toLocaleString()}
+                </p>
 
                 <div className="card-actions mt-4">
-                  <button className="btn btn-primary btn-sm w-full">View Booking</button>
+                  <button className="btn btn-primary btn-sm w-full hover:scale-105 transition-transform">
+                    View Booking
+                  </button>
                 </div>
               </div>
             </div>
