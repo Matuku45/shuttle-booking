@@ -125,11 +125,44 @@ const handleUpdateBooking = async (booking) => {
 
 
 
-  const handleDeleteBooking = (booking) => {
-    if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
-    setBookings((prev) => prev.filter((b) => b.id !== booking.id));
-    alert(`⚠️ Booking deleted. 50% of R${booking.price} has been charged.`);
+const handleDeleteBooking = async (booking) => {
+  if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
+
+  const chargeAmount = booking.price / 2; // 50% charge
+
+  // Prepare the same payment payload structure
+  const paymentPayload = {
+    passenger_name: booking.passengerName,
+    passenger_phone: booking.phone,
+    shuttle_id: booking.id,
+    booking_id: booking.id,
+    seats: booking.seats,
+    amount: chargeAmount,
+    status: "Cancelled", // mark it as cancelled/deleted
+    car: booking.car,
   };
+
+  try {
+    // Save deletion payment to API
+    await fetch(`${BASE_URL}/api/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentPayload),
+    });
+    console.log("Deletion charge saved successfully!");
+
+    // Remove the booking locally
+    const updatedBookings = bookings.filter((b) => b.id !== booking.id);
+    setBookings(updatedBookings);
+    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+
+    alert(`⚠️ Booking deleted. 50% of R${chargeAmount} has been charged.`);
+  } catch (err) {
+    console.error("Error saving deletion charge:", err);
+    alert("⚠️ Failed to save deletion charge. Try again!");
+  }
+};
+
 
   if (loading)
     return (
