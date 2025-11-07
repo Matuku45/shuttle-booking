@@ -43,7 +43,7 @@ const AllBookingsAdmin = () => {
     fetchBookings();
   }, []);
 
-  // Fetch locations for addresses
+  // Fetch locations
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -57,7 +57,7 @@ const AllBookingsAdmin = () => {
     fetchLocations();
   }, []);
 
-  // Countdown timer
+  // Countdown timers
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
@@ -132,6 +132,7 @@ const AllBookingsAdmin = () => {
                   </p>
                 </div>
 
+                {/* Admin-only location access */}
                 <button
                   onClick={goToLocation}
                   className="mt-4 w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base flex items-center justify-center gap-2"
