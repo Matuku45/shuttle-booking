@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { FaCar, FaRoute, FaClock, FaGlobeAfrica, FaPhone, FaEnvelope } from "react-icons/fa";
+import {
+  FaCar,
+  FaRoute,
+  FaClock,
+  FaGlobeAfrica,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const AllBookings = () => {
@@ -7,20 +15,22 @@ const AllBookings = () => {
   const [editingBooking, setEditingBooking] = useState(null);
   const [timers, setTimers] = useState({});
   const [loading, setLoading] = useState(true);
-  const [locations, setLocations] = useState([]);
   const navigate = useNavigate();
 
-  const BASE_URL = "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
+  const BASE_URL =
+    "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev";
 
   const loggedInEmail = JSON.parse(localStorage.getItem("user"))?.email?.toLowerCase();
 
   const normalizeBooking = (b) => ({
     ...b,
-    from: b.route?.split(/->|→/)[0]?.trim() || "",
-    to: b.route?.split(/->|→/)[1]?.trim() || "",
+    from: b.from || b.route?.split(/->|→/)[0]?.trim() || "",
+    to: b.to || b.route?.split(/->|→/)[1]?.trim() || "",
+    fromAddress: b.fromAddress || "",
+    toAddress: b.toAddress || "",
+    basePrice: b.basePrice || b.price || 0,
   });
 
-  // Load bookings from localStorage only
   useEffect(() => {
     const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
     const filtered = localBookings
@@ -30,34 +40,17 @@ const AllBookings = () => {
     setLoading(false);
   }, [loggedInEmail]);
 
-  // Fetch locations from backend
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/api/locationform`);
-        const data = await res.json();
-        setLocations(data || []);
-      } catch (error) {
-        console.error("Error fetching locations:", error);
-      }
-    };
-    fetchLocations();
-  }, []);
-
-  // Countdown timer
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
       bookings.forEach((b) => {
         const diff = new Date(b.date).getTime() - new Date().getTime();
-        if (diff > 0) {
-          const h = Math.floor(diff / 3600000);
-          const m = Math.floor((diff % 3600000) / 60000);
-          const s = Math.floor((diff % 60000) / 1000);
-          newTimers[b.id] = `${h}h ${m}m ${s}s`;
-        } else {
-          newTimers[b.id] = "Time passed";
-        }
+        newTimers[b.id] =
+          diff > 0
+            ? `${Math.floor(diff / 3600000)}h ${Math.floor(
+                (diff % 3600000) / 60000
+              )}m ${Math.floor((diff % 60000) / 1000)}s`
+            : "⏰ Time passed";
       });
       setTimers(newTimers);
     }, 1000);
@@ -66,51 +59,88 @@ const AllBookings = () => {
 
   const handleEdit = (booking) => setEditingBooking(booking);
 
-  const handleFieldChange = (e, booking, field) => {
+  const handleFieldChange = (e, bookingId, field) => {
+    const value = e.target.value;
     setBookings((prev) =>
-      prev.map((b) => (b.id === booking.id ? { ...b, [field]: e.target.value } : b))
+      prev.map((b) => {
+        if (b.id === bookingId) {
+          const updated = { ...b, [field]: value };
+          if (field === "seats") {
+            updated.price = updated.basePrice * Number(updated.seats || 1);
+          }
+          return updated;
+        }
+        return b;
+      })
     );
   };
 
   const goToLocation = () => navigate("/location");
 
-  // Realistic pricing function
-  const calculatePrice = (booking) => {
-    let basePerSeat = 50; // default
-    if (booking.car?.toLowerCase().includes("lux")) basePerSeat = 120;
-    else if (booking.car?.toLowerCase().includes("van")) basePerSeat = 90;
-    return Number(booking.seats) * basePerSeat;
+const handleUpdateBooking = async (booking) => {
+  const totalAmount = booking.basePrice * Number(booking.seats || 1);
+  const updatedBooking = { ...booking, price: totalAmount };
+
+  // Update local bookings
+  const updatedBookings = bookings.map((b) =>
+    b.id === booking.id ? updatedBooking : b
+  );
+  setBookings(updatedBookings);
+  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+  setEditingBooking(null);
+
+  // Prepare payment payload
+  const paymentPayload = {
+    passenger_name: booking.passengerName,
+    passenger_phone: booking.phone,
+    shuttle_id: booking.shuttle_id || booking.id,
+    booking_id: booking.id,
+    seats: booking.seats,
+    amount: totalAmount,
+    status: "Booked",
+    car: booking.car,
   };
 
-  // Update booking in the interface only and redirect to Stripe
-  const handleUpdateBooking = (booking) => {
-    const updatedBooking = { ...booking, price: calculatePrice(booking) };
-    setBookings((prev) =>
-      prev.map((b) => (b.id === booking.id ? updatedBooking : b))
-    );
-    setEditingBooking(null);
-    alert(`✅ Booking updated! New price: R${updatedBooking.price}`);
+  try {
+    // Save payment to API
+    const res = await fetch(`${BASE_URL}/api/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentPayload),
+    });
+
+    if (!res.ok) throw new Error("Payment API failed");
+
+    console.log("Payment saved successfully!");
+
+    // Redirect to Stripe checkout AFTER saving
+    alert(`✅ Booking updated! Proceed to payment of R${totalAmount}.`);
     window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-  };
 
-  // Delete booking in the interface only and alert 50% charge
+  } catch (err) {
+    console.error("Error saving payment:", err);
+    alert("⚠️ Failed to save payment. Try again!");
+  }
+};
+
+
+
   const handleDeleteBooking = (booking) => {
     if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
     setBookings((prev) => prev.filter((b) => b.id !== booking.id));
     alert(`⚠️ Booking deleted. 50% of R${booking.price} has been charged.`);
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-100 via-white to-blue-200">
         <p className="text-blue-700 text-lg font-semibold">Loading bookings...</p>
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
-      <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-center text-blue-900 drop-shadow-md">
+      <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 text-center text-blue-900 drop-shadow-md">
         🛡️ My Bookings
       </h2>
 
@@ -119,146 +149,128 @@ const AllBookings = () => {
           No bookings found for your account.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bookings.map((b) => {
-            const bookingLocation = locations.find(
-              (loc) => loc.email.toLowerCase() === b.email.toLowerCase()
-            );
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {bookings.map((b) => (
+            <div
+              key={b.id}
+              className="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-2xl shadow-lg p-5 border-l-8 border-blue-700 hover:scale-[1.03] transition-all duration-300 relative"
+            >
+              <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-semibold text-red-700">
+                <FaClock /> {timers[b.id]}
+              </div>
 
-            return (
-              <div
-                key={b.id}
-                className="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-2xl shadow-xl p-5 border-l-8 border-blue-600 transform hover:scale-105 transition-all duration-300 relative"
-              >
-                <div className="absolute top-4 right-4 flex items-center gap-1 text-sm font-semibold text-red-600">
-                  <FaClock /> {timers[b.id]}
+              <div className="text-white space-y-3">
+                <h3 className="font-bold text-lg">{b.passengerName}</h3>
+                <p className="flex items-center gap-2 text-sm">
+                  <FaCar /> {b.car}
+                </p>
+
+                {/* Route (read-only) */}
+                <div className="bg-blue-500/30 p-3 rounded-xl mt-3 space-y-2">
+                  <p className="font-semibold flex items-center gap-2 text-sm">
+                    <FaRoute /> Route:
+                  </p>
+                  <p className="text-sm">{b.from} → {b.to}</p>
                 </div>
 
-                <h3 className="font-bold text-xl text-white mb-3">{b.passengerName}</h3>
-                <p className="text-sm text-white flex items-center gap-2">
-                  <FaCar className="text-yellow-300" /> {b.car}
-                </p>
-                <p className="text-sm text-white flex items-center gap-2">
-                  <FaRoute className="text-green-200" /> {b.from} → {b.to}
-                </p>
+                {/* From Address */}
+                <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <FaMapMarkerAlt /> From Address:
+                  </label>
+                  {editingBooking?.id === b.id ? (
+                    <input
+                      type="text"
+                      value={b.fromAddress}
+                      onChange={(e) => handleFieldChange(e, b.id, "fromAddress")}
+                      placeholder="Specific address"
+                      className="border border-gray-300 rounded-md p-2 w-full text-black"
+                    />
+                  ) : (
+                    <p className="text-sm italic">{b.fromAddress || "No address"}</p>
+                  )}
+                </div>
 
-                <div className="my-3 space-y-2 text-white">
-                  <label className="block text-sm font-semibold">Seats:</label>
+                {/* To Address */}
+                <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <FaMapMarkerAlt /> To Address:
+                  </label>
+                  {editingBooking?.id === b.id ? (
+                    <input
+                      type="text"
+                      value={b.toAddress}
+                      onChange={(e) => handleFieldChange(e, b.id, "toAddress")}
+                      placeholder="Specific address"
+                      className="border border-gray-300 rounded-md p-2 w-full text-black"
+                    />
+                  ) : (
+                    <p className="text-sm italic">{b.toAddress || "No address"}</p>
+                  )}
+                </div>
+
+                {/* Seats + Price */}
+                <div className="flex justify-between items-center mt-4">
                   {editingBooking?.id === b.id ? (
                     <input
                       type="number"
+                      min="1"
                       value={b.seats}
-                      onChange={(e) => handleFieldChange(e, b, "seats")}
-                      className="border border-gray-300 rounded-md p-2 w-full text-black"
+                      onChange={(e) => handleFieldChange(e, b.id, "seats")}
+                      className="border border-gray-300 rounded-md p-2 w-20 text-black"
                     />
                   ) : (
-                    <p>{b.seats}</p>
+                    <p className="text-sm">🪑 {b.seats} seat(s)</p>
                   )}
-
-                  <label className="block text-sm font-semibold">Phone:</label>
-                  {editingBooking?.id === b.id ? (
-                    <input
-                      type="tel"
-                      value={b.phone}
-                      onChange={(e) => handleFieldChange(e, b, "phone")}
-                      className="border border-gray-300 rounded-md p-2 w-full text-black"
-                    />
-                  ) : (
-                    <p className="flex items-center gap-2">
-                      <FaPhone /> {b.phone}
-                    </p>
-                  )}
-
-                  <p className="text-lg font-semibold text-green-200">💰 R {b.price}</p>
-                  <p className="flex items-center gap-2 text-sm">
-                    <FaEnvelope /> {b.email}
+                  <p className="text-lg font-bold text-green-200">
+                    💰 R {b.price}
                   </p>
-
-                  {/* ADDRESSES */}
-                  <label className="block text-sm font-semibold">From Address:</label>
-                  {editingBooking?.id === b.id ? (
-                    <input
-                      type="text"
-                      value={bookingLocation?.fromLocation || ""}
-                      onChange={(e) => {
-                        setLocations((prev) =>
-                          prev.map((loc) =>
-                            loc.email.toLowerCase() === b.email.toLowerCase()
-                              ? { ...loc, fromLocation: e.target.value }
-                              : loc
-                          )
-                        );
-                        handleFieldChange(e, b, "from");
-                      }}
-                      placeholder="Street, City, Postal Code, Country"
-                      className="border border-gray-300 rounded-md p-2 w-full text-black"
-                    />
-                  ) : (
-                    <p className="text-sm flex items-center gap-2">
-                      <FaGlobeAfrica /> From: {bookingLocation?.fromLocation || "null"}
-                    </p>
-                  )}
-
-                  <label className="block text-sm font-semibold">To Address:</label>
-                  {editingBooking?.id === b.id ? (
-                    <input
-                      type="text"
-                      value={bookingLocation?.toLocation || ""}
-                      onChange={(e) => {
-                        setLocations((prev) =>
-                          prev.map((loc) =>
-                            loc.email.toLowerCase() === b.email.toLowerCase()
-                              ? { ...loc, toLocation: e.target.value }
-                              : loc
-                          )
-                        );
-                        handleFieldChange(e, b, "to");
-                      }}
-                      placeholder="Street, City, Postal Code, Country"
-                      className="border border-gray-300 rounded-md p-2 w-full text-black"
-                    />
-                  ) : (
-                    <p className="text-sm flex items-center gap-2">
-                      <FaGlobeAfrica /> To: {bookingLocation?.toLocation || "null"}
-                    </p>
-                  )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between mt-4 gap-3">
-                  <button
-                    onClick={goToLocation}
-                    className="flex-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                  >
-                    <FaGlobeAfrica className="inline mr-2" /> View Location
-                  </button>
-
-                  {editingBooking?.id === b.id ? (
-                    <button
-                      onClick={() => handleUpdateBooking(b)}
-                      className="flex-1 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                    >
-                      Update & Pay
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEdit(b)}
-                        className="flex-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBooking(b)}
-                        className="flex-1 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
+                {/* Phone & Email */}
+                <p className="text-sm flex items-center gap-2 mt-2">
+                  <FaPhone /> {b.phone}
+                </p>
+                <p className="text-sm flex items-center gap-2">
+                  <FaEnvelope /> {b.email}
+                </p>
               </div>
-            );
-          })}
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between mt-5 gap-3">
+                <button
+                  onClick={goToLocation}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                >
+                  <FaGlobeAfrica className="inline mr-2" /> View Location
+                </button>
+
+                {editingBooking?.id === b.id ? (
+                  <button
+                    onClick={() => handleUpdateBooking(b)}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                  >
+                    Update {b.seatsChanged ? "& Pay" : ""}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleEdit(b)}
+                      className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBooking(b)}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
