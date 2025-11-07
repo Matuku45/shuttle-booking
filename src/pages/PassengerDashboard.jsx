@@ -404,14 +404,14 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
         const isActiveBooking = bookingLoading && bookingShuttleId === shuttle.id; // Only active shuttle shows progress
 
         return (
-    <div
+   <div
   key={shuttle.id}
   className="bg-white border border-gray-200 rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 w-full max-w-md mx-auto"
 >
   {/* Company */}
   <div className="flex items-center gap-2 mb-3">
     <img src="/src/assets/react.svg" alt="Logo" className="w-6 h-6" />
-    <span className="font-semibold text-gray-800 text-sm">{company}</span>
+    <span className="font-semibold text-gray-800 text-sm">CITILINER PLUS</span>
   </div>
 
   {/* Times */}
@@ -439,15 +439,26 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
 
   {/* Seats Input */}
   <div className="mb-3 space-y-1 text-xs">
+    <label className="block text-gray-600 font-medium mb-1">Select Seats:</label>
     <input
       type="number"
       min="1"
       max={DEFAULT_CAR.seats}
       value={seats}
       onChange={(e) => handleSeatChange(shuttle.id, e.target.value)}
-      className="border border-gray-200 rounded p-1 w-full"
+      className="border border-gray-200 rounded p-1 w-full text-center focus:ring focus:ring-blue-200 outline-none"
       placeholder="Enter number of seats"
     />
+  </div>
+
+  {/* Total Price Display */}
+  <div className="flex items-center justify-between mb-3 bg-gray-50 border border-gray-100 p-2 rounded-lg">
+    <span className="text-sm text-gray-700 flex items-center gap-2">
+      💰 <span className="font-medium">Total Amount</span>
+    </span>
+    <span className="text-sm font-semibold text-green-700">
+      R{(seats * price).toFixed(2)}
+    </span>
   </div>
 
   {/* Price & Booking Button */}
@@ -457,11 +468,11 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
       disabled={bookingLoading}
       className="bg-orange-500 text-white font-semibold py-2 px-4 rounded-full shadow-sm hover:bg-orange-600 transition transform hover:scale-105 text-sm disabled:opacity-50"
     >
-      {bookingLoading && isActiveBooking ? "Booking..." : `R${price} →`}
+      {bookingLoading && isActiveBooking ? "Booking..." : `Book for R${(seats * price).toFixed(2)} →`}
     </button>
   </div>
 
-  {/* Booking Progress Slider (Only shows after booking starts) */}
+  {/* Booking Progress Slider */}
   {isActiveBooking && (
     <div className="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
       <div
@@ -471,6 +482,7 @@ const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {  // remove /api
     </div>
   )}
 </div>
+
 
         );
       })}
