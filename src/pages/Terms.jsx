@@ -11,8 +11,14 @@ const Terms = () => {
         <h1 className="text-3xl font-bold text-blue-800 mb-2 text-center">
           MetroShuttle Terms & Conditions
         </h1>
-        <p className="text-sm text-gray-600 mb-6 text-center">
+        <p className="text-sm text-gray-600 mb-2 text-center">
           Effective Date: October 5, 2025
+        </p>
+
+        {/* Business Address for Legal Compliance */}
+        <p className="text-sm text-gray-600 mb-6 text-center">
+          <strong>Registered Business Address:</strong> MetroShuttle (Pty) Ltd.,
+          580 Jeugd Street, Montana, Pretoria, Gauteng, 0182, South Africa
         </p>
 
         {/* Terms content */}
