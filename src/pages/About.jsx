@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FaUserTie, FaMapMarkedAlt, FaShieldAlt, FaMoneyCheckAlt, FaHandshake } from "react-icons/fa";
+import { FaGlobeAfrica, FaUserTie, FaShieldAlt, FaMoneyCheckAlt, FaHandshake } from "react-icons/fa";
 
 const About = () => {
   const fadeUp = {
@@ -9,13 +9,25 @@ const About = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#e0eafc] to-[#f9f9f9] flex flex-col items-center justify-center px-6 py-16 overflow-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#e0eafc] via-[#f1faee] to-[#f9f9f9] flex flex-col items-center justify-center px-6 py-16 overflow-auto">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeUp}
-        className="w-full max-w-6xl bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-14 space-y-10"
+        className="w-full max-w-6xl bg-white/80 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 md:p-14 space-y-10"
       >
+        {/* Animated Icon Header */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1, rotate: 360 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+          className="flex justify-center mb-6"
+        >
+          <div className="p-6 rounded-full bg-gradient-to-r from-[#1d3557] via-[#457b9d] to-[#a8dadc] shadow-lg">
+            <FaGlobeAfrica className="text-white text-4xl animate-pulse" />
+          </div>
+        </motion.div>
+
         {/* Title */}
         <motion.h1
           variants={fadeUp}
@@ -46,33 +58,33 @@ const About = () => {
         {/* Section 2: Why Choose Us */}
         <motion.div variants={fadeUp} className="card bg-gradient-to-r from-[#f1faee] to-[#e0f7fa] p-8 rounded-2xl shadow-md hover:shadow-xl transition">
           <h2 className="text-2xl font-bold text-[#1d3557] mb-6 flex items-center gap-2">
-            <FaMapMarkedAlt className="text-[#1d3557]" /> Why Choose MetroShuttle?
+            <FaShieldAlt className="text-[#1d3557]" /> Why Choose MetroShuttle?
           </h2>
 
           <div className="grid md:grid-cols-2 gap-6 text-gray-700">
             <div className="p-4 rounded-xl border border-[#a8dadc]/40 bg-white/70 hover:bg-white transition">
               <h3 className="font-semibold text-[#1d3557]">Seamless Booking</h3>
-              <p>From search to payment, book your ride in minutes — no calls, no waiting, just instant confirmation.</p>
+              <p>Book your ride in minutes — no calls, no waiting, just instant confirmation.</p>
             </div>
 
             <div className="p-4 rounded-xl border border-[#a8dadc]/40 bg-white/70 hover:bg-white transition">
               <h3 className="font-semibold text-[#1d3557]">Door-to-Door Convenience</h3>
-              <p>Forget fixed terminals. We pick you up and drop you off exactly where you need to be.</p>
+              <p>We pick you up and drop you off exactly where you need to be — true point-to-point comfort.</p>
             </div>
 
             <div className="p-4 rounded-xl border border-[#a8dadc]/40 bg-white/70 hover:bg-white transition">
               <h3 className="font-semibold text-[#1d3557]">Optimized Travel Routes</h3>
-              <p>We use major national roads for the fastest, safest, and most comfortable route — tolls included.</p>
+              <p>We use major national roads for faster, safer routes — toll fees always included.</p>
             </div>
 
             <div className="p-4 rounded-xl border border-[#a8dadc]/40 bg-white/70 hover:bg-white transition">
               <h3 className="font-semibold text-[#1d3557]">Safety First</h3>
-              <p>Our vetted driver network and modern fleet ensure every journey is secure and comfortable.</p>
+              <p>Our vetted driver network and modern fleet ensure every trip is secure and comfortable.</p>
             </div>
 
             <div className="p-4 rounded-xl border border-[#a8dadc]/40 bg-white/70 hover:bg-white transition md:col-span-2">
               <h3 className="font-semibold text-[#1d3557]">Transparent Pricing</h3>
-              <p>Know your fare upfront — our integrated payment system means no hidden fees or cash hassles.</p>
+              <p>Know your full fare upfront — no hidden fees or surprises, ever.</p>
             </div>
           </div>
         </motion.div>
@@ -83,13 +95,13 @@ const About = () => {
             <FaHandshake className="text-[#457b9d]" /> Our Team and Promise
           </h2>
           <p className="text-gray-700 leading-relaxed">
-            While founded by <strong>Kgabo Manamela</strong>, MetroShuttle is powered by a passionate team of <strong>18 professionals</strong> across operations, technology, and customer support.
+            Founded by <strong>Kgabo Manamela</strong>, MetroShuttle is powered by a team of <strong>18 dedicated professionals</strong> across operations, technology, and customer support.
           </p>
           <p className="text-gray-700 mt-4 leading-relaxed">
-            We are committed to making your next inter-city trip the easiest one yet — handling the logistics so you can focus on your destination.
+            We are committed to making your next inter-city trip the easiest one yet. We handle the logistics so you can focus on your destination.
           </p>
           <p className="text-[#1d3557] font-semibold mt-6 text-lg text-center italic">
-            “Welcome aboard! Your journey to simplicity, safety, and comfort starts here.” ✨
+            “Welcome aboard! Your journey to simplicity, safety, and comfort starts here.” 🌍
           </p>
         </motion.div>
 
