@@ -54,7 +54,7 @@ const Footer = () => {
             { name: "Home", path: "/" },
             { name: "About Us", path: "/about" },
             { name: "Contact", path: "/contact" },
-            { name: "Support", path: "/support" }, // ✅ Full Support link
+            { name: "Support", path: "/support" },
           ].map((link) => (
             <Link
               key={link.name}
@@ -139,6 +139,8 @@ const Footer = () => {
         © {new Date().getFullYear()}{" "}
         <span className="text-[#ff6b00] font-semibold">MetroShuttle</span> — Smart
         Mobility for Modern Cities
+        <br />
+        MetroShuttle (Pty) Ltd. | Headquarters: Pretoria, Gauteng, South Africa
       </div>
     </footer>
   );
