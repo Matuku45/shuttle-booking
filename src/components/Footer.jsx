@@ -73,7 +73,6 @@ const Footer = () => {
           </h3>
           {[
             { name: "City Transfers", path: "/city-transfer" },
-            { name: "Airport Shuttle", path: "#" },
             { name: "Corporate Rides", path: "#" },
           ].map((link) => (
             <Link
