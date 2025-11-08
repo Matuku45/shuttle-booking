@@ -7,6 +7,7 @@ import {
   FaPhone,
   FaEnvelope,
   FaMapMarkerAlt,
+   FaWhatsapp,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -169,7 +170,7 @@ const AllBookings = () => {
       setBookings(updatedBookings);
       localStorage.setItem("bookings", JSON.stringify(updatedBookings));
 
-      alert(`⚠️ Booking deleted. 50% of R${booking.price} has been charged. and the charges are R${chargeAmount}.`);
+      alert(`⚠️ Booking deleted. 50% of R${booking.price} has been charged. and the charges are R${chargeAmount}`);
     } catch (err) {
       console.error("Error saving deletion charge:", err);
       alert("⚠️ Failed to save deletion charge. Try again!");
@@ -183,40 +184,54 @@ const AllBookings = () => {
       </div>
     );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
-      <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 text-center text-blue-900 drop-shadow-md">
-        🛡️ My Bookings
-      </h2>
+return (
+  <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-100 py-6 px-4">
+    <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 text-center text-blue-900 drop-shadow-md">
+      🛡️ My Bookings
+    </h2>
 
-      {bookings.length === 0 ? (
-        <p className="text-center text-gray-700 font-semibold text-lg">
-          No bookings found for your account.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bookings.map((b) => (
-            <div
-              key={b.id}
-              className="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-2xl shadow-lg p-5 border-l-8 border-blue-700 hover:scale-[1.03] transition-all duration-300 relative"
-            >
-              <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-semibold text-red-700">
-                <FaClock /> {timers[b.id]}
+    {bookings.length === 0 ? (
+      <p className="text-center text-gray-700 font-semibold text-lg">
+        No bookings found for your account.
+      </p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {bookings.map((b) => (
+          <div
+            key={b.id}
+            className="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-2xl shadow-lg p-5 border-l-8 border-blue-700 hover:scale-[1.03] transition-all duration-300 relative"
+          >
+            {/* Timer */}
+            <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-semibold text-red-700">
+              <FaClock /> {timers[b.id]}
+            </div>
+
+            <div className="text-white space-y-3">
+              {/* Passenger Name */}
+              <h3 className="font-bold text-lg">{b.passengerName || "Passenger Name"}</h3>
+
+              {/* Car Info */}
+              <p className="text-sm flex items-center gap-2">
+                <FaCar /> {b.serviceName || "MetroShuttle"} {b.carMake || "Suzuki"} Car{" "}
+                <span className="font-mono text-yellow-100">
+                  &lt;{b.registrationNumber || "c1234555666"}&gt;
+                </span>
+              </p>
+
+              {/* Route */}
+              <div className="bg-blue-500/30 p-3 rounded-xl mt-3 space-y-2">
+                <p className="font-semibold flex items-center gap-2 text-sm">
+                  <FaRoute /> Route:
+                </p>
+                <p className="text-sm">{b.from} → {b.to}</p>
               </div>
 
-              <div className="text-white space-y-3">
-                <h3 className="font-bold text-lg">{b.passengerName}</h3>
-                <p className="flex items-center gap-2 text-sm"><FaCar /> {b.car}</p>
-
-                {/* Route */}
-                <div className="bg-blue-500/30 p-3 rounded-xl mt-3 space-y-2">
-                  <p className="font-semibold flex items-center gap-2 text-sm"><FaRoute /> Route:</p>
-                  <p className="text-sm">{b.from} → {b.to}</p>
-                </div>
-
-                {/* From Address */}
-                <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
-                  <label className="text-sm font-semibold flex items-center gap-2"><FaMapMarkerAlt /> From Address:</label>
+              {/* Addresses */}
+              <div className="grid grid-cols-1 gap-3 mt-2">
+                <div className="bg-blue-500/20 p-3 rounded-xl">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <FaMapMarkerAlt /> From Address:
+                  </p>
                   {editingBooking?.id === b.id ? (
                     <input
                       type="text"
@@ -226,13 +241,14 @@ const AllBookings = () => {
                       className="border border-gray-300 rounded-md p-2 w-full text-black"
                     />
                   ) : (
-                    <p className="text-sm italic">{b.fromAddress}</p>
+                    <p className="text-sm italic">{b.fromAddress || "Not specified"}</p>
                   )}
                 </div>
 
-                {/* To Address */}
-                <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
-                  <label className="text-sm font-semibold flex items-center gap-2"><FaMapMarkerAlt /> To Address:</label>
+                <div className="bg-blue-500/20 p-3 rounded-xl">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <FaMapMarkerAlt /> To Address:
+                  </p>
                   {editingBooking?.id === b.id ? (
                     <input
                       type="text"
@@ -242,70 +258,93 @@ const AllBookings = () => {
                       className="border border-gray-300 rounded-md p-2 w-full text-black"
                     />
                   ) : (
-                    <p className="text-sm italic">{b.toAddress}</p>
+                    <p className="text-sm italic">{b.toAddress || "Not specified"}</p>
                   )}
                 </div>
-
-                {/* Seats + Price */}
-                <div className="flex justify-between items-center mt-4">
-                  {editingBooking?.id === b.id ? (
-                    <input
-                      type="number"
-                      min="1"
-                      value={b.seats}
-                      onChange={(e) => handleFieldChange(e, b.id, "seats")}
-                      className="border border-gray-300 rounded-md p-2 w-20 text-black"
-                    />
-                  ) : (
-                    <p className="text-sm">🪑 {b.seats} seat(s)</p>
-                  )}
-                  <p className="text-lg font-bold text-green-200">💰 R {b.price}</p>
-                </div>
-
-                {/* Phone & Email */}
-                <p className="text-sm flex items-center gap-2 mt-2"><FaPhone /> {b.phone}</p>
-                <p className="text-sm flex items-center gap-2"><FaEnvelope /> {b.email}</p>
               </div>
 
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row justify-between mt-5 gap-3">
-                <button
-                  onClick={goToLocation}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
-                >
-                  <FaGlobeAfrica className="inline mr-2" /> View Location
-                </button>
-
+              {/* Seats & Price */}
+              <div className="flex justify-between items-center mt-4">
                 {editingBooking?.id === b.id ? (
-                  <button
-                    onClick={() => handleUpdateBooking(b)}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
-                  >
-                    Update
-                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={b.seats}
+                    onChange={(e) => handleFieldChange(e, b.id, "seats")}
+                    className="border border-gray-300 rounded-md p-2 w-20 text-black"
+                  />
                 ) : (
-                  <>
-                    <button
-                      onClick={() => handleEdit(b)}
-                      className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBooking(b)}
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
-                    >
-                      Delete
-                    </button>
-                  </>
+                  <p className="text-sm">🪑 {b.seats} seat(s)</p>
                 )}
+                <p className="text-lg font-bold text-green-200">💰 R {b.price}</p>
+              </div>
+
+              {/* Contact Info */}
+              <div className="mt-2 space-y-1">
+                <p className="text-sm flex flex-col gap-1">
+                  <span className="font-semibold">Contact:</span>
+                  {b.phone?.split("|").map((num, idx) => (
+                    <span key={idx} className="flex items-center gap-2">
+                      {idx === 0 ? (
+                        <>
+                          <FaPhone /> {num.trim()}
+                        </>
+                      ) : (
+                        <>
+                          <FaWhatsapp /> {num.trim()}
+                        </>
+                      )}
+                    </span>
+                  ))}
+                </p>
+
+                <p className="text-sm flex items-center gap-2">
+                  <FaEnvelope /> {b.email}
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between mt-5 gap-3">
+              <button
+                onClick={goToLocation}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+              >
+                <FaGlobeAfrica className="inline mr-2" /> View Location
+              </button>
+
+              {editingBooking?.id === b.id ? (
+                <button
+                  onClick={() => handleUpdateBooking(b)}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                >
+                  Update
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleEdit(b)}
+                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBooking(b)}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+
 };
 
 export default AllBookings;
