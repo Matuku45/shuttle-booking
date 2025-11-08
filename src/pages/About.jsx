@@ -2,95 +2,67 @@ import React from 'react';
 import { FaUser, FaBus, FaHandshake, FaCheckCircle, FaCreditCard } from 'react-icons/fa';
 
 const About = () => (
-  <div className="h-screen w-screen flex flex-col justify-center items-center bg-gradient-to-br from-[#f1faee] to-[#e0eafc] text-center px-4 overflow-auto">
+  <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-gradient-to-br from-[#f1faee] to-[#e0eafc] text-center px-4 overflow-auto py-12">
     <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl p-6 sm:p-10 md:p-16 flex flex-col gap-6 animate-fadeIn">
       
       {/* Emoji Header */}
       <div className="text-5xl sm:text-6xl md:text-7xl mb-4 animate-bounce">🚌</div>
 
       {/* Title */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gradient-to-r from-[#457b9d] via-[#1d3557] to-[#a8dadc] mb-6 bg-clip-text text-transparent">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#457b9d] via-[#1d3557] to-[#a8dadc] bg-clip-text text-transparent mb-6">
         About MetroShuttle: Connecting South Africa, One City at a Time
       </h1>
 
-      {/* Intro Paragraph */}
-      <p className="text-base sm:text-lg md:text-xl mb-6">
-        Welcome to MetroShuttle, your trusted platform for seamless and reliable city-to-city transport across South Africa.
-        We believe traveling between major metros and vibrant towns shouldn't be complicated or costly.
-        Our mission is simple: to connect passengers with independent, professional shuttle partners using smart technology and a deep understanding of local travel needs.
+      {/* Section 1: Our Mission and Origin */}
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] flex items-center justify-center gap-2 mb-4">
+        <FaCheckCircle className="text-[#457b9d] animate-pulse" /> About Us – Our Mission and Origin
+      </h2>
+      <p className="text-gray-700 text-left leading-relaxed">
+        MetroShuttle was founded by <strong>Kgabo Manamela</strong> through <strong>SnM Holdings</strong> to make intercity travel what it should be: simple, reliable, and stress-free.
+        The idea for this platform was born out of a realization that travelers shouldn't have to choose between expensive, rigid options and inconvenient, time-consuming public transport.
+      </p>
+      <p className="text-gray-700 text-left leading-relaxed">
+        Our goal is to connect cities by providing a premium, on-demand shuttle service booked entirely through our seamless website, offering a modern alternative that respects your time and comfort.
       </p>
 
-      {/* Our Mission */}
-      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] mb-4 flex items-center justify-center gap-2">
-        <FaCheckCircle className="text-[#457b9d] animate-pulse"/> Our Mission
+      {/* Section 2: Why Choose MetroShuttle */}
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] flex items-center justify-center gap-2 mt-8 mb-4">
+        <FaBus className="text-[#1d3557] animate-bounce" /> Why Choose MetroShuttle?
       </h2>
-      <p className="text-gray-700 mb-6">
-        To empower local commuters and travelers by providing a reliable, safe, and convenient intercity shuttle booking service.
-        We envision a connected South Africa where reliable transportation is accessible to everyone, everywhere.
-      </p>
-
-      {/* How MetroShuttle Works */}
-      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] mb-4 flex items-center justify-center gap-2">
-        <FaBus className="text-[#1d3557] animate-bounce"/> How MetroShuttle Works
-      </h2>
-      <div className="text-gray-700 text-left space-y-3">
-        <p><strong>MetroShuttle is a tech platform:</strong> not a traditional transport company. We act as a bridge connecting passengers and independent Shuttle Partners.</p>
-        
-        {/* Passenger Section */}
-        <h3 className="font-semibold mt-2 flex items-center gap-2 text-[#457b9d]">
-          <FaUser className="animate-pulse"/> For the Passenger: Travel Made Simple
-        </h3>
-        <ul className="list-disc list-inside ml-5 text-gray-700 space-y-1">
-          <li><strong>All-Inclusive Pricing:</strong> The fare you see is what you pay, covering the seat, journey, and expected tolls.</li>
-          <li><strong>Reliability:</strong> We prioritize Shuttle Partners known for punctuality and high service standards.</li>
-          <li><strong>Safety First:</strong> Vehicles are vetted, and clear safety guidelines are maintained. Your peace of mind is our priority.</li>
-          <li><strong>Booking Flexibility:</strong> Browse shuttles, select seats, and cancel according to platform policies.</li>
-          <li><strong>Transparent Communication:</strong> Connect directly with Shuttle Partners for queries or lost items recovery.</li>
-        </ul>
-
-        {/* Shuttle Partner Section */}
-        <h3 className="font-semibold mt-4 flex items-center gap-2 text-[#1d3557]">
-          <FaHandshake className="animate-bounce"/> For the Shuttle Partner: Growing Together
-        </h3>
-        <ul className="list-disc list-inside ml-5 text-gray-700 space-y-1">
-          <li><strong>Empowerment:</strong> Control over your schedule and routes.</li>
-          <li><strong>Growth Support:</strong> 0% commission for the first month to help onboard and grow.</li>
-          <li><strong>Future Commission:</strong> Implemented later for marketing, platform maintenance, and secure data handling.</li>
-          <li><strong>Independent Contractor:</strong> Responsible for your own vehicle, licensing, and insurance.</li>
-          <li><strong>Reliable Payment:</strong> Fare collected minus applicable service fees and taxes.</li>
-        </ul>
-      </div>
-
-      {/* Booking Steps */}
-      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] mt-6 mb-4 flex items-center gap-2">
-        <FaCreditCard className="animate-pulse"/> Booking Steps
-      </h2>
-      <ol className="list-decimal list-inside space-y-3 text-gray-800 text-sm sm:text-base md:text-lg text-left">
-        <li><strong>Sign In:</strong> Log in or create an account to book.</li>
-        <li><strong>Search for a Shuttle:</strong> Choose departure, destination, and travel date.</li>
+      <ul className="list-disc list-inside text-gray-700 text-left space-y-3 ml-4">
         <li>
-          <strong>View Available Shuttles:</strong>
-          <ul className="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-700">
-            <li>Departure time</li>
-            <li>Number of available seats</li>
-            <li>Price per seat</li>
-          </ul>
+          <strong>Seamless Booking:</strong> From search to payment, book your ride in minutes. No calls, no waiting—just instant confirmation.
         </li>
-        <li><strong>Select & Book:</strong> Choose your shuttle and seats, then confirm your booking.</li>
-        <li><strong>Payment:</strong> Securely pay online via integrated gateways.</li>
-        <li><strong>Confirmation:</strong> Your booking is confirmed and stored in your profile. Optional email confirmation sent.</li>
-      </ol>
+        <li>
+          <strong>Door-to-Door Convenience:</strong> Forget fixed terminals. We pick you up and drop you off exactly where you need to be, providing true point-to-point service.
+        </li>
+        <li>
+          <strong>Optimized Travel Routes:</strong> We exclusively use major national roads and highways for the fastest, safest, and most comfortable route. Tollgate fees are always included in your fare, ensuring a smooth, uninterrupted journey every time.
+        </li>
+        <li>
+          <strong>Safety First:</strong> Our vetted driver network and modern fleet ensure every journey is safe and comfortable.
+        </li>
+        <li>
+          <strong>Transparent Pricing:</strong> Know your full fare upfront. Our integrated payment system means no hidden fees or cash hassles.
+        </li>
+      </ul>
 
-      {/* MetroShuttle Difference */}
-      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] mt-6 mb-4 flex items-center gap-2">
-        <FaBus className="animate-bounce"/> The MetroShuttle Difference
+      {/* Section 3: Our Team and Promise */}
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1d3557] flex items-center justify-center gap-2 mt-8 mb-4">
+        <FaHandshake className="text-[#457b9d] animate-bounce" /> Our Team and Promise
       </h2>
-      <p className="text-gray-700 mb-6">
-        Proudly South African, we understand the distances, roads, and the need for trustworthy service. Every journey booked supports an independent local business. Join us in building a better, more connected transport network across Mzansi!
+      <p className="text-gray-700 text-left leading-relaxed">
+        While founded by <strong>Kgabo Manamela</strong>, MetroShuttle is driven by a dedicated team of <strong>18 members</strong> across our operations, technology, and customer support departments.
+      </p>
+      <p className="text-gray-700 text-left leading-relaxed">
+        We are committed to making your next inter-city trip the easiest one yet. We handle the logistics so you can focus on the destination.
+      </p>
+      <p className="text-[#1d3557] font-semibold mt-4 text-lg text-center italic">
+        Welcome aboard! 🚐 Your journey to simplicity, safety, and comfort starts here.
       </p>
 
       {/* Back to Top Button */}
-      <div className="flex justify-center mt-6">
+      <div className="flex justify-center mt-10">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="bg-gradient-to-r from-[#457b9d] via-[#1d3557] to-[#a8dadc] text-white px-8 py-3 rounded-xl hover:scale-105 transition-transform shadow-lg font-semibold text-lg"

@@ -109,15 +109,16 @@ const Login = ({ onForgotPasswordClick }) => {
             {/* Role Selector */}
             <div className="relative">
               <FaUserCircle className="absolute top-3 left-3 text-gray-400" />
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full pl-10 p-3 border border-blue-400 rounded-lg bg-slate-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="passenger">Passenger</option>
-            
-              </select>
+           <select
+  name="role"
+  value={form.role}
+  onChange={handleChange}
+  className="w-full pl-10 p-3 border border-blue-400 rounded-lg bg-slate-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+>
+  <option value="passenger">Passenger</option>
+  <option value="admin">Admin</option> {/* Add if needed */}
+</select>
+
             </div>
 
             {/* Error Message */}
