@@ -85,63 +85,129 @@ const AllBookings = () => {
   }, [bookings]);
 
   const handleEdit = (booking) => setEditingBooking(booking);
-
-  const handleFieldChange = (e, bookingId, field) => {
-    const value = e.target.value;
-    setBookings((prev) =>
-      prev.map((b) => {
-        if (b.id === bookingId) {
-          const updated = { ...b, [field]: value };
-          if (field === "seats") {
-            updated.price = updated.basePrice * Number(updated.seats || 1);
-          }
-          return updated;
+const handleFieldChange = (e, bookingId, field) => {
+  const value = e.target.value;
+  setBookings((prev) =>
+    prev.map((b) => {
+      if (b.id === bookingId) {
+        const updated = { ...b };
+        if (field === "seats") {
+          updated.newSeats = Number(value);
+          updated.displayPrice = updated.basePrice * updated.newSeats;
+        } else {
+          updated[field] = value;
         }
-        return b;
-      })
-    );
-  };
+        return updated;
+      }
+      return b;
+    })
+  );
+};
+
 
   const goToLocation = () => navigate("/location");
 
-  const handleUpdateBooking = async (booking) => {
-    const totalAmount = booking.basePrice * Number(booking.seats || 1);
-    const updatedBooking = { ...booking, price: totalAmount };
+const handleUpdateBooking = async (booking) => {
+  const oldSeats = Number(booking.seats || 1); // originally booked
+  const newSeats = Number(booking.newSeats ?? oldSeats); // updated seats
+  const pricePerSeat = booking.basePrice;
 
-    const updatedBookings = bookings.map((b) =>
-      b.id === booking.id ? updatedBooking : b
+  const seatDifference = newSeats - oldSeats; // +ve = added, -ve = removed
+  const amountChange = seatDifference * pricePerSeat;
+
+  if (seatDifference === 0) {
+    const proceed = window.confirm(
+      "Seats unchanged. Update location only?"
     );
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    setEditingBooking(null);
+    if (!proceed) return;
+  }
 
-    const paymentPayload = {
-      passenger_name: booking.passengerName,
-      passenger_phone: booking.phone,
-      shuttle_id: booking.shuttle_id || booking.id,
-      booking_id: booking.id,
-      seats: booking.seats,
-      amount: totalAmount,
-      status: `Booking updated - total R${totalAmount}`,
-      car: booking.car,
+  const updatedBooking = {
+    ...booking,
+    seats: newSeats, // store updated seats as current
+    price: pricePerSeat * newSeats, // total price now
+  };
+
+  // Update local state
+  const updatedBookings = bookings.map((b) =>
+    b.id === booking.id ? updatedBooking : b
+  );
+  setBookings(updatedBookings);
+  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+  setEditingBooking(null);
+
+  try {
+    // Update location form
+    const locRes = await fetch(`${BASE_URL}/api/locationform`);
+    const allLocations = await locRes.json();
+    const existingLocation = allLocations.find(
+      (l) => l.email?.toLowerCase() === booking.email?.toLowerCase()
+    );
+
+    const locationPayload = {
+      fromLocation: booking.fromAddress,
+      toLocation: booking.toAddress,
+      email: booking.email,
     };
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/payments`, {
+    const locResponse = existingLocation
+      ? await fetch(`${BASE_URL}/api/locationform/${existingLocation.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(locationPayload),
+        })
+      : await fetch(`${BASE_URL}/api/locationform`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(locationPayload),
+        });
+
+    if (!locResponse.ok) throw new Error("Failed to update location");
+
+    // Payment/Refund if seats changed
+    if (seatDifference !== 0) {
+      const paymentPayload = {
+        passenger_name: booking.passengerName,
+        passenger_phone: booking.phone,
+        shuttle_id: booking.shuttle_id || booking.id,
+        booking_id: booking.id,
+        seats: Math.abs(seatDifference),
+        amount: Math.abs(amountChange),
+        status:
+          seatDifference > 0
+            ? `Added ${seatDifference} seat(s) - pay R${amountChange}`
+            : `Removed ${-seatDifference} seat(s) - refund R${-amountChange}`,
+        car: booking.car,
+      };
+
+      const resPayment = await fetch(`${BASE_URL}/api/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paymentPayload),
       });
 
-      if (!res.ok) throw new Error("Payment API failed");
+      if (!resPayment.ok) throw new Error("Payment API failed");
 
-      alert(`✅ Booking updated! Please proceed to payment of R${totalAmount}.`);
-      window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-    } catch (err) {
-      console.error("Error saving payment:", err);
-      alert("⚠️ Failed to save payment. Try again!");
+      if (seatDifference > 0) {
+        alert(
+          `✅ Booking updated! Please pay R${amountChange} for the additional ${seatDifference} seat(s).`
+        );
+        window.location.href =
+          "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+      } else {
+        alert(
+          `✅ Booking updated! R${-amountChange} will be refunded for the removed ${-seatDifference} seat(s).`
+        );
+      }
+    } else {
+      alert("✅ Location updated successfully!");
     }
-  };
+  } catch (err) {
+    console.error("Error updating booking or location:", err);
+    alert("⚠️ Failed to update booking. Try again!");
+  }
+};
+
 
   const handleDeleteBooking = async (booking) => {
     if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
@@ -154,7 +220,7 @@ const AllBookings = () => {
       shuttle_id: booking.id,
       booking_id: booking.id,
       seats: booking.seats,
-      amount: booking.price,
+      amount: chargeAmount,
       status: `Cancelled - charged 50%: R${chargeAmount}`,
       car: booking.car,
     };
@@ -264,20 +330,27 @@ return (
               </div>
 
               {/* Seats & Price */}
-              <div className="flex justify-between items-center mt-4">
-                {editingBooking?.id === b.id ? (
-                  <input
-                    type="number"
-                    min="1"
-                    value={b.seats}
-                    onChange={(e) => handleFieldChange(e, b.id, "seats")}
-                    className="border border-gray-300 rounded-md p-2 w-20 text-black"
-                  />
-                ) : (
-                  <p className="text-sm">🪑 {b.seats} seat(s)</p>
-                )}
-                <p className="text-lg font-bold text-green-200">💰 R {b.price}</p>
-              </div>
+<div className="flex justify-between items-center mt-4">
+  {editingBooking?.id === b.id ? (
+    <>
+      <input
+        type="number"
+        min="1"
+        value={b.newSeats ?? b.seats}
+        onChange={(e) => handleFieldChange(e, b.id, "seats")}
+        className="border border-gray-300 rounded-md p-2 w-20 text-black"
+      />
+      <p className="text-lg font-bold text-green-200">
+        💰 R {b.displayPrice ?? b.price}
+      </p>
+    </>
+  ) : (
+    <>
+      <p className="text-sm">🪑 {b.seats} seat(s)</p>
+      <p className="text-lg font-bold text-green-200">💰 R {b.price}</p>
+    </>
+  )}
+</div>
 
               {/* Contact Info */}
               <div className="mt-2 space-y-1">
