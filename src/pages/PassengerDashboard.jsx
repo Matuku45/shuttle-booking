@@ -432,7 +432,7 @@ const handleBooking = async (shuttle) => {
 
   {/* Duration & Seats */}
   <div className="flex items-center justify-between mb-3">
-    <span className="text-xs text-gray-700">🚌 Bus | {duration}</span>
+    <span className="text-xs text-gray-700">🚌  MetroShuttle Suzuki Car C1234555666RG | {duration}</span>
     <div className="flex gap-1">
       {Array.from({ length: seats }, (_, i) => (
         <span key={i} className="text-gray-500 text-xs animate-pulse">👤</span>
