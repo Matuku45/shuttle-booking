@@ -31,15 +31,43 @@ const AllBookings = () => {
     basePrice: b.basePrice || b.price || 0,
   });
 
+  // Load bookings and populate addresses from API
   useEffect(() => {
-    const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
-    const filtered = localBookings
-      .filter((b) => b.email?.toLowerCase() === loggedInEmail)
-      .map(normalizeBooking);
-    setBookings(filtered);
-    setLoading(false);
+    const loadBookings = async () => {
+      const localBookings = JSON.parse(localStorage.getItem("bookings")) || [];
+      const filtered = localBookings
+        .filter((b) => b.email?.toLowerCase() === loggedInEmail)
+        .map(normalizeBooking);
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/locationform`);
+        const locations = await res.json();
+
+        // Map addresses from API to bookings by email
+        const bookingsWithAddresses = filtered.map((b) => {
+          const loc = locations.find(
+            (l) => l.email?.toLowerCase() === b.email?.toLowerCase()
+          );
+          return {
+            ...b,
+            fromAddress: loc?.fromLocation || b.fromAddress,
+            toAddress: loc?.toLocation || b.toAddress,
+          };
+        });
+
+        setBookings(bookingsWithAddresses);
+      } catch (err) {
+        console.error("Error fetching locations:", err);
+        setBookings(filtered);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBookings();
   }, [loggedInEmail]);
 
+  // Timer effect
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers = {};
@@ -47,9 +75,7 @@ const AllBookings = () => {
         const diff = new Date(b.date).getTime() - new Date().getTime();
         newTimers[b.id] =
           diff > 0
-            ? `${Math.floor(diff / 3600000)}h ${Math.floor(
-                (diff % 3600000) / 60000
-              )}m ${Math.floor((diff % 60000) / 1000)}s`
+            ? `${Math.floor(diff / 3600000)}h ${Math.floor((diff % 3600000) / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
             : "⏰ Time passed";
       });
       setTimers(newTimers);
@@ -77,92 +103,78 @@ const AllBookings = () => {
 
   const goToLocation = () => navigate("/location");
 
-const handleUpdateBooking = async (booking) => {
-  const totalAmount = booking.basePrice * Number(booking.seats || 1);
-  const updatedBooking = { ...booking, price: totalAmount };
+  const handleUpdateBooking = async (booking) => {
+    const totalAmount = booking.basePrice * Number(booking.seats || 1);
+    const updatedBooking = { ...booking, price: totalAmount };
 
-  // Update local bookings
-  const updatedBookings = bookings.map((b) =>
-    b.id === booking.id ? updatedBooking : b
-  );
-  setBookings(updatedBookings);
-  localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-  setEditingBooking(null);
-
-  // Prepare payment payload
-  const paymentPayload = {
-    passenger_name: booking.passengerName,
-    passenger_phone: booking.phone,
-    shuttle_id: booking.shuttle_id || booking.id,
-    booking_id: booking.id,
-    seats: booking.seats,
-    amount: totalAmount, // total updated price
-    status: `Booking updated - total R${totalAmount}`, // descriptive status
-    car: booking.car,
-  };
-
-  try {
-    // Save payment to API
-    const res = await fetch(`${BASE_URL}/api/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(paymentPayload),
-    });
-
-    if (!res.ok) throw new Error("Payment API failed");
-
-    console.log("Payment saved successfully!");
-
-    // Redirect to Stripe checkout AFTER saving
-    alert(`✅ Booking updated! Please proceed to payment of R${totalAmount}.`);
-    window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-  } catch (err) {
-    console.error("Error saving payment:", err);
-    alert("⚠️ Failed to save payment. Try again!");
-  }
-};
-
-
-
-const handleDeleteBooking = async (booking) => {
-  if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
-
-  const chargeAmount = booking.price / 2; // 50% charge
-
-  // Prepare the payment payload
-  const paymentPayload = {
-    passenger_name: booking.passengerName,
-    passenger_phone: booking.phone,
-    shuttle_id: booking.id,
-    booking_id: booking.id,
-    seats: booking.seats,
-    amount: booking.price, // total booking price
-    status: `Cancelled - charged 50%: R${chargeAmount}`, // descriptive status
-    car: booking.car,
-  };
-
-  try {
-    // Save deletion charge to API
-    await fetch(`${BASE_URL}/api/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(paymentPayload),
-    });
-    console.log("Deletion charge saved successfully!");
-
-    // Remove the booking locally
-    const updatedBookings = bookings.filter((b) => b.id !== booking.id);
+    const updatedBookings = bookings.map((b) =>
+      b.id === booking.id ? updatedBooking : b
+    );
     setBookings(updatedBookings);
     localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    setEditingBooking(null);
 
-    alert(`⚠️ Booking deleted. 50% of R${chargeAmount} has been charged.`);
-  } catch (err) {
-    console.error("Error saving deletion charge:", err);
-    alert("⚠️ Failed to save deletion charge. Try again!");
-  }
-};
+    const paymentPayload = {
+      passenger_name: booking.passengerName,
+      passenger_phone: booking.phone,
+      shuttle_id: booking.shuttle_id || booking.id,
+      booking_id: booking.id,
+      seats: booking.seats,
+      amount: totalAmount,
+      status: `Booking updated - total R${totalAmount}`,
+      car: booking.car,
+    };
 
+    try {
+      const res = await fetch(`${BASE_URL}/api/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentPayload),
+      });
 
+      if (!res.ok) throw new Error("Payment API failed");
+
+      alert(`✅ Booking updated! Please proceed to payment of R${totalAmount}.`);
+      window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
+    } catch (err) {
+      console.error("Error saving payment:", err);
+      alert("⚠️ Failed to save payment. Try again!");
+    }
+  };
+
+  const handleDeleteBooking = async (booking) => {
+    if (!window.confirm("Are you sure? 50% of your booking price will be charged.")) return;
+
+    const chargeAmount = booking.price / 2;
+
+    const paymentPayload = {
+      passenger_name: booking.passengerName,
+      passenger_phone: booking.phone,
+      shuttle_id: booking.id,
+      booking_id: booking.id,
+      seats: booking.seats,
+      amount: booking.price,
+      status: `Cancelled - charged 50%: R${chargeAmount}`,
+      car: booking.car,
+    };
+
+    try {
+      await fetch(`${BASE_URL}/api/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentPayload),
+      });
+
+      const updatedBookings = bookings.filter((b) => b.id !== booking.id);
+      setBookings(updatedBookings);
+      localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+
+      alert(`⚠️ Booking deleted. 50% of R${booking.price} has been charged. and the charges are R${chargeAmount}.`);
+    } catch (err) {
+      console.error("Error saving deletion charge:", err);
+      alert("⚠️ Failed to save deletion charge. Try again!");
+    }
+  };
 
   if (loading)
     return (
@@ -194,23 +206,17 @@ const handleDeleteBooking = async (booking) => {
 
               <div className="text-white space-y-3">
                 <h3 className="font-bold text-lg">{b.passengerName}</h3>
-                <p className="flex items-center gap-2 text-sm">
-                  <FaCar /> {b.car}
-                </p>
+                <p className="flex items-center gap-2 text-sm"><FaCar /> {b.car}</p>
 
-                {/* Route (read-only) */}
+                {/* Route */}
                 <div className="bg-blue-500/30 p-3 rounded-xl mt-3 space-y-2">
-                  <p className="font-semibold flex items-center gap-2 text-sm">
-                    <FaRoute /> Route:
-                  </p>
+                  <p className="font-semibold flex items-center gap-2 text-sm"><FaRoute /> Route:</p>
                   <p className="text-sm">{b.from} → {b.to}</p>
                 </div>
 
                 {/* From Address */}
                 <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
-                  <label className="text-sm font-semibold flex items-center gap-2">
-                    <FaMapMarkerAlt /> From Address:
-                  </label>
+                  <label className="text-sm font-semibold flex items-center gap-2"><FaMapMarkerAlt /> From Address:</label>
                   {editingBooking?.id === b.id ? (
                     <input
                       type="text"
@@ -220,15 +226,13 @@ const handleDeleteBooking = async (booking) => {
                       className="border border-gray-300 rounded-md p-2 w-full text-black"
                     />
                   ) : (
-                    <p className="text-sm italic">{b.fromAddress || "No address"}</p>
+                    <p className="text-sm italic">{b.fromAddress}</p>
                   )}
                 </div>
 
                 {/* To Address */}
                 <div className="bg-blue-500/20 p-3 rounded-xl mt-3 space-y-2">
-                  <label className="text-sm font-semibold flex items-center gap-2">
-                    <FaMapMarkerAlt /> To Address:
-                  </label>
+                  <label className="text-sm font-semibold flex items-center gap-2"><FaMapMarkerAlt /> To Address:</label>
                   {editingBooking?.id === b.id ? (
                     <input
                       type="text"
@@ -238,7 +242,7 @@ const handleDeleteBooking = async (booking) => {
                       className="border border-gray-300 rounded-md p-2 w-full text-black"
                     />
                   ) : (
-                    <p className="text-sm italic">{b.toAddress || "No address"}</p>
+                    <p className="text-sm italic">{b.toAddress}</p>
                   )}
                 </div>
 
@@ -255,18 +259,12 @@ const handleDeleteBooking = async (booking) => {
                   ) : (
                     <p className="text-sm">🪑 {b.seats} seat(s)</p>
                   )}
-                  <p className="text-lg font-bold text-green-200">
-                    💰 R {b.price}
-                  </p>
+                  <p className="text-lg font-bold text-green-200">💰 R {b.price}</p>
                 </div>
 
                 {/* Phone & Email */}
-                <p className="text-sm flex items-center gap-2 mt-2">
-                  <FaPhone /> {b.phone}
-                </p>
-                <p className="text-sm flex items-center gap-2">
-                  <FaEnvelope /> {b.email}
-                </p>
+                <p className="text-sm flex items-center gap-2 mt-2"><FaPhone /> {b.phone}</p>
+                <p className="text-sm flex items-center gap-2"><FaEnvelope /> {b.email}</p>
               </div>
 
               {/* Buttons */}
@@ -283,7 +281,7 @@ const handleDeleteBooking = async (booking) => {
                     onClick={() => handleUpdateBooking(b)}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg shadow-md text-sm sm:text-base transition-all"
                   >
-                    Update {b.seatsChanged ? "& Pay" : ""}
+                    Update
                   </button>
                 ) : (
                   <>

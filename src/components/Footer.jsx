@@ -20,7 +20,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
         {/* Company Info */}
         <div>
-          <h3 className="font-bold text-white mb-3 text-lg">MetroShuttle</h3>
+          <h3 className="font-bold text-white mb-3 text-lg">metroshuttle.co.za</h3>
           <p className="text-sm leading-relaxed">
             Smart city-to-city shuttle booking for professionals, travelers, and
             students. Reliable, affordable, and designed for urban efficiency.

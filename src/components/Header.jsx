@@ -15,7 +15,7 @@ const Header = ({ onSignUpClick, onLoginClick }) => {
     <header className="w-full bg-blue-900 text-white shadow sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-3 sm:px-6">
         <div className="text-xl sm:text-2xl font-bold tracking-wide">
-          metroshuttle.coza
+          metroshuttle.co.za
         </div>
 
         {/* Desktop navigation */}

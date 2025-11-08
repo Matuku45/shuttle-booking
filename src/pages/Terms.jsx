@@ -17,7 +17,7 @@ const Terms = () => {
 
         {/* Business Address for Legal Compliance */}
         <p className="text-sm text-gray-600 mb-6 text-center">
-          <strong>Registered Business Address:</strong> MetroShuttle (Pty) Ltd.,
+          <strong>Registered Business Address:</strong> MetroShuttle (Pty) Ltd., 
           580 Jeugd Street, Montana, Pretoria, Gauteng, 0182, South Africa
         </p>
 
