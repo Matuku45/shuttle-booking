@@ -15,6 +15,7 @@ import CityTransfer from "./pages/city-transfer"; // ✅ Added import
 import LocationForm from "./pages/LocationForm"; // ✅ Added import
 import ViewAllLocations from "./pages/ViewAllLocations";
 import TrackAllPayment from "./pages/track-all-payment";
+import Support from "./pages/support";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/location-form" element={<LocationForm />} /> {/* ✅ Added route */} 
             <Route path="/view-locations" element={<ViewAllLocations />} /> {/* ✅ Added route */}
             <Route path="/track-payments" element={<TrackAllPayment />} /> {/* ✅ Added route */}
+            <Route path="/support" element={<Support />} /> {/* ✅ Added route */}
           </Routes>
         </main>
 
