@@ -18,47 +18,52 @@ const LocationForm = () => {
       setToLocation(savedLocation.toLocation || "");
     }
   }, []);
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  if (!fromLocation || !toLocation) {
+    alert("Please fill in both pickup and destination locations.");
+    return;
+  }
 
-    if (!fromLocation || !toLocation) {
-      alert("Please fill in both pickup and destination locations.");
-      return;
-    }
+  setLoading(true);
 
-    setLoading(true); // ✅ Start slider animation
-
-    const locationFormData = {
-      id: Math.floor(Math.random() * 1000000),
-      fromLocation,
-      toLocation,
-      email,
-    };
-
-    try {
-      const response = await fetch(
-        "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/locationform",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(locationFormData),
-        }
-      );
-
-      if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-      const result = await response.json();
-      console.log("Location saved:", result);
-
-      localStorage.setItem("locationForm", JSON.stringify(locationFormData));
-      window.location.href = "https://buy.stripe.com/test_7sY5kFgupfQO7FC4UOcwg01";
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save location. Please try again.");
-      setLoading(false); // ✅ Stop slider on error
-    }
+  const locationFormData = {
+    id: Math.floor(Math.random() * 1000000),
+    fromLocation,
+    toLocation,
+    email,
   };
 
+  try {
+    const response = await fetch(
+      "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/locationform",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(locationFormData),
+      }
+    );
+
+    if (!response.ok) throw new Error(`Backend error: ${response.status}`);
+
+    const result = await response.json();
+    console.log("Location saved:", result);
+
+    localStorage.setItem("locationForm", JSON.stringify(locationFormData));
+
+    // REMOVE STRIPE
+    // window.location.href = "https://buy.stripe.com/test_xyz";
+
+    //  Redirect to your React route
+    navigate("/payment");
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to save location. Please try again.");
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-sky-100 to-blue-200 p-6">
       <motion.div
