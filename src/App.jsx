@@ -17,6 +17,12 @@ import ViewAllLocations from "./pages/ViewAllLocations";
 import TrackAllPayment from "./pages/track-all-payment";
 import Support from "./pages/support";
 import Contacts from "./pages/Contacts";
+import Payment from "./components/payment"; // ✅ Added import
+
+
+
+
+
 function App() {
   return (
     <Router>
@@ -39,6 +45,8 @@ function App() {
             <Route path="/track-payments" element={<TrackAllPayment />} /> {/* ✅ Added route */}
             <Route path="/support" element={<Support />} /> {/* ✅ Added route */}
             <Route path="/contact" element={<Contacts />} /> {/* ✅ Added route */}
+            <Route path="/payment" element={<Payment />} /> {/* ✅ Added route */}  
+
           </Routes>
         </main>
 
