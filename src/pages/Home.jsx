@@ -11,7 +11,7 @@ const slides = [
     img: img1,
     title: "Connecting Cities, Empowering Journeys",
     description:
-      "MetroShuttle connects major cities across the country with comfortable  affordable, and reliable shuttle services. Travel smarter, faster, and safer.",
+      "MetroShuttle connects major cities across the country with comfortable, affordable, and reliable shuttle services. Travel smarter, faster, and safer.",
   },
   {
     img: img2,
@@ -27,13 +27,18 @@ const slides = [
   },
 ];
 
-const SHUTTLE_API = "https://shuttle-booking-system.fly.dev/api/shuttles";
 const OZOW_API = "https://python-script-ozzowtesting-1.onrender.com/api/pay";
-const DEFAULT_CAR = { name: "MetroShuttle Suzuki Car <c1234555666>", seats: 10 };
+const DEFAULT_CAR = { name: "MetroShuttle Bus", seats: 10 };
+
+// **Static shuttle data**
+const STATIC_SHUTTLES = [
+  { id: 1, route: "Johannesburg → Pretoria", time: "08:00 AM", price: 150 },
+  { id: 2, route: "Cape Town → Stellenbosch", time: "09:30 AM", price: 120 },
+  { id: 3, route: "Durban → Pietermaritzburg", time: "07:00 AM", price: 100 },
+];
 
 const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [shuttles, setShuttles] = useState([]);
   const [seatsSelection, setSeatsSelection] = useState({});
   const [loadingPayment, setLoadingPayment] = useState(false);
 
@@ -45,25 +50,6 @@ const Home = () => {
     );
     return () => clearTimeout(timer);
   }, [currentSlide]);
-
-  // Fetch shuttles
-  useEffect(() => {
-    const fetchShuttles = async () => {
-      try {
-        const res = await fetch(SHUTTLE_API);
-        const data = await res.json();
-        const shuttleList = Array.isArray(data) ? data : data.shuttles || [];
-        setShuttles(
-          shuttleList.length
-            ? shuttleList.map((s) => ({ ...s, car: DEFAULT_CAR }))
-            : []
-        );
-      } catch (err) {
-        console.error("Error fetching shuttles:", err);
-      }
-    };
-    fetchShuttles();
-  }, []);
 
   const handleSeatChange = (id, seats) => {
     setSeatsSelection((prev) => ({ ...prev, [id]: Number(seats) }));
@@ -138,16 +124,13 @@ const Home = () => {
         </motion.div>
       </section>
 
-      {/* Shuttle & Payment Section */}
+      {/* Static Shuttle Section */}
       <section className="bg-gray-50 py-16">
         <h2 className="text-4xl font-extrabold text-center mb-12">
           🚍 Available Shuttles
         </h2>
         <div className="flex flex-wrap justify-center gap-6 px-4 md:px-12">
-          {shuttles.length === 0 && (
-            <p className="text-gray-500">No shuttles available currently.</p>
-          )}
-          {shuttles.map((shuttle) => {
+          {STATIC_SHUTTLES.map((shuttle) => {
             const seats = seatsSelection[shuttle.id] || 1;
             return (
               <motion.div
