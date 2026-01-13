@@ -11,7 +11,7 @@ const slides = [
     img: img1,
     title: "Connecting Cities, Empowering Journeys",
     description:
-      "MetroShuttle connects major cities across the country with comfortable, affordable, and reliable shuttle services. Travel smarter, faster, and safer.",
+      "MetroShuttle connects major cities across the country with comfortable  affordable, and reliable shuttle services. Travel smarter, faster, and safer.",
   },
   {
     img: img2,
