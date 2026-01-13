@@ -41,5 +41,9 @@ export default defineConfig(({ mode }) => {
       // Frontend environment variable for backend
       __API_BASE_URL__: JSON.stringify(API_BASE_URL),
     },
+ build: {
+    outDir: "build", // change output from dist -> build
+  },
+
   };
 });
