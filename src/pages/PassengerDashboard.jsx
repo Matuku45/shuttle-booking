@@ -192,9 +192,7 @@ const handleBooking = async (shuttle) => {
   if (!user.phone || !user.phone.trim()) return alert("Enter your phone number!");
   if (!user.email || !user.email.trim()) return alert("User email not found!");
 
-  // ✅ Calculate total amount correctly
   const totalAmount = shuttle.price * seats;
-
   setBookingLoading(true);
   setBookingProgress(0);
 
@@ -203,7 +201,7 @@ const handleBooking = async (shuttle) => {
     await requestUserLocation();
     setBookingProgress(20);
 
-    // ✅ Create booking payload with correct total amount
+    // 1️⃣ Create booking payload
     const bookingPayload = {
       shuttle_id: shuttle.id,
       passengerName: user.name,
@@ -213,12 +211,11 @@ const handleBooking = async (shuttle) => {
       date: shuttle.date,
       time: shuttle.time,
       seats,
-      price: totalAmount, // ✅ fixed: total price now stored
+      price: totalAmount,
       path: shuttle.path,
       car: DEFAULT_CAR.name,
     };
 
-    // ✅ Send booking to backend (removed /api as per your setup)
     const bookingRes = await fetch(`${PAYMENT_BASE}/bookings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -226,53 +223,40 @@ const handleBooking = async (shuttle) => {
     });
 
     if (!bookingRes.ok) throw new Error(`Booking API failed: ${bookingRes.status}`);
-
     const bookingResult = await bookingRes.json();
     if (!bookingResult.success) throw new Error("Booking failed at API");
 
     const savedBooking = bookingResult.booking;
 
-    // ✅ Save booking locally
+    // Save booking locally
     const storedBookings = JSON.parse(localStorage.getItem("bookings")) || [];
     storedBookings.push(savedBooking);
     localStorage.setItem("bookings", JSON.stringify(storedBookings));
 
     setBookingProgress(50);
 
-    // ✅ Payment payload using the same total amount
-    const paymentPayload = {
-      passenger_name: user.name,
-      passenger_phone: user.phone,
-      shuttle_id: shuttle.id,
-      booking_id: savedBooking.id,
-      seats,
-      amount: totalAmount, // ✅ same total as booking
-      status: "Booked", // better to mark as pending until confirmed
-      payment_date: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      car: DEFAULT_CAR.name,
-    };
-
-    const paymentRes = await fetch(`${PAYMENT_BASE}/api/payments`, {
+    // 2️⃣ Call Ozow payment API to get payment link
+    const payRes = await fetch(`https://python-script-ozzowtesting-1.onrender.com/api/pay`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(paymentPayload),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        booking_id: savedBooking.id,
+        amount: totalAmount,
+        email: user.email,
+        phone: user.phone,
+        name: user.name,
+      }),
     });
 
-    if (!paymentRes.ok) throw new Error(`Payment API failed: ${paymentRes.status}`);
-
-    const paymentResult = await paymentRes.json();
-    if (!paymentResult.success) throw new Error("Payment failed at API");
-
-    // ✅ Save payment locally
-    const storedPayments = JSON.parse(localStorage.getItem("payments")) || [];
-    storedPayments.push(paymentResult.payment);
-    localStorage.setItem("payments", JSON.stringify(storedPayments));
+    if (!payRes.ok) throw new Error(`Payment API failed: ${payRes.status}`);
+    const payResult = await payRes.json();
+    if (!payResult.url) throw new Error("No payment URL returned");
 
     setBookingProgress(100);
 
-    alert(`Booking In Pending! Total: R${totalAmount.toFixed(2)} — Redirecting to payment page...`);
-    window.location.href = "/location-form";
+    alert(`Booking created! Redirecting to payment page...`);
+    // 3️⃣ Redirect to payment page
+    window.location.href = payResult.url;
 
   } catch (err) {
     console.error("Booking/Payment error:", err.message);
@@ -282,6 +266,7 @@ const handleBooking = async (shuttle) => {
     setBookingProgress(0);
   }
 };
+
 
 
 
@@ -485,9 +470,7 @@ const handleBooking = async (shuttle) => {
     </div>
   )}
 </div>
-
-
-        );
+   );
       })}
     </div>
   </section>
@@ -566,7 +549,7 @@ const handleBooking = async (shuttle) => {
       </div>
     </div>
   </motion.section>
-)}
+)} 
       </main>
     </div>
   );

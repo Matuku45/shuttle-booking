@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { FaMapMarkerAlt, FaArrowRight, FaRoute } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const LocationForm = () => {
+  const navigate = useNavigate(); // ✅ here, at the top level
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ New loading state
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -18,52 +20,49 @@ const LocationForm = () => {
       setToLocation(savedLocation.toLocation || "");
     }
   }, []);
-const handleSubmit = async (e) => {
-  e.preventDefault();
 
-  if (!fromLocation || !toLocation) {
-    alert("Please fill in both pickup and destination locations.");
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  setLoading(true);
+    if (!fromLocation || !toLocation) {
+      alert("Please fill in both pickup and destination locations.");
+      return;
+    }
 
-  const locationFormData = {
-    id: Math.floor(Math.random() * 1000000),
-    fromLocation,
-    toLocation,
-    email,
+    setLoading(true);
+
+    const locationFormData = {
+      id: Math.floor(Math.random() * 1000000),
+      fromLocation,
+      toLocation,
+      email,
+    };
+
+    try {
+      const response = await fetch(
+        "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/locationform",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(locationFormData),
+        }
+      );
+
+      if (!response.ok) throw new Error(`Backend error: ${response.status}`);
+
+      const result = await response.json();
+      console.log("Location saved:", result);
+
+      localStorage.setItem("locationForm", JSON.stringify(locationFormData));
+
+      navigate("/payment"); // ✅ works now
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save location. Please try again.");
+      setLoading(false);
+    }
   };
-
-  try {
-    const response = await fetch(
-      "https://my-payment-session-shuttle-system-cold-glade-4798.fly.dev/api/locationform",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(locationFormData),
-      }
-    );
-
-    if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-
-    const result = await response.json();
-    console.log("Location saved:", result);
-
-    localStorage.setItem("locationForm", JSON.stringify(locationFormData));
-
-    // REMOVE STRIPE
-    // window.location.href = "https://buy.stripe.com/test_xyz";
-
-    //  Redirect to your React route
-    navigate("/payment");
-
-  } catch (err) {
-    console.error(err);
-    alert("Failed to save location. Please try again.");
-    setLoading(false);
-  }
-};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-sky-100 to-blue-200 p-6">
       <motion.div

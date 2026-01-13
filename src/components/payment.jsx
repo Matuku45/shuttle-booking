@@ -1,121 +1,172 @@
-// Payment.js
-import React from "react";
-import { Zap, DollarSign, Globe, Lock, Code, Link, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Zap, DollarSign, Fingerprint, Code, User, Send, Scale, Banknote } from 'lucide-react';
+import { sha512 } from 'js-sha512';
 
-// Define the PaymentRequest interface structure (for clarity within the component)
-const PaymentRequestFieldData = [
-    {
-        category: "Mandatory Parameters",
-        icon: Zap,
-        fields: [
-            { name: "siteCode", type: "string", description: "Unique merchant site identifier.", required: true, example: "SITE001A" },
-            { name: "countryCode", type: "string", description: "ISO 3166-1 alpha-2 code (ZA).", required: true, example: "ZA" },
-            { name: "currencyCode", type: "string", description: "ISO 4217 code (ZAR).", required: true, example: "ZAR" },
-            { name: "amount", type: "number<double>", description: "The transaction amount.", required: true, example: "150.20" },
-            { name: "transactionReference", type: "string", description: "Merchant's unique transaction reference.", required: true, example: "INV-4523-JAN" },
-            { name: "bankReference", type: "string", description: "Reference for merchant bank statement recon.", required: true, example: "PAY-8051" },
-            { name: "isTest", type: "boolean", description: "Flag to execute in test mode (true/false).", required: true, example: "true" },
-            { name: "hashCheck", type: "string", description: "SHA512 integrity check hash.", required: true, example: "a3b1c5..." },
-        ],
-    },
-    {
-        category: "Redirection and Notification Endpoints",
-        icon: Link,
-        fields: [
-            { name: "successUrl", type: "string<uri>", description: "URL for successful payment redirect/post.", required: false },
-            { name: "cancelUrl", type: "string<uri>", description: "URL for customer cancellation redirect/post.", required: false },
-            { name: "errorUrl", type: "string<uri>", description: "URL for error redirect/post.", required: false },
-            { name: "notifyUrl", type: "string<uri>", description: "URL for asynchronous transaction notification post.", required: false },
-        ],
-    },
-    {
-        category: "Customer and Bank Routing",
-        icon: User,
-        fields: [
-            { name: "customer", type: "string", description: "Customer name or identifier.", required: false },
-            { name: "selectedBankId", type: "string<uuid>", description: "Bank UUID to bypass bank selection screen.", required: false },
-            { name: "customerIdentifier", type: "string", description: "SA ID number (Required for high-risk merchants).", required: false },
-            { name: "customerCellphoneNumber", type: "string", description: "Cellphone number for faster login (Exclude from hash).", required: false },
-            { name: "expiryDateUtc", type: "string", description: "Cutoff time for payment acceptance (yyyy-MM-dd HH:mm UTC).", required: false },
-        ],
-    },
-    {
-        category: "Supplementary and Variable Fields",
-        icon: Code,
-        fields: [
-            { name: "allowVariableAmount", type: "boolean", description: "Allows user to change the amount.", required: false },
-            { name: "variableAmountMin", type: "number<double>", description: "Minimum if variable amount is allowed.", required: false },
-            { name: "variableAmountMax", type: "number<double>", description: "Maximum if variable amount is allowed.", required: false },
-            { name: "optional1", type: "string", description: "Merchant-defined supplementary data field 1.", required: false },
-            { name: "optional2", type: "string", description: "Merchant-defined supplementary data field 2.", required: false },
-            // ... (optional3, optional4, optional5 omitted for brevity in display)
-        ],
-    },
-];
+// ===== FRONTEND DEMO ONLY =====
+const OZOW_MERCHANT_CODE = "METROSITESPTYLTD9DEC74AF8E";
+const OZOW_PRIVATE_KEY = "8573b1780aca4b3d849bd04ef05097b8";
+const OZOW_API_URL = "https://api.ozow.com/postpaymentrequest";
 
+// Redirection URLs
+const APP_BASE_URL = "https://yourshuttlebooking.com";
+const SUCCESS_URL = `${APP_BASE_URL}/payment/success`;
+const CANCEL_URL = `${APP_BASE_URL}/payment/cancel`;
+const ERROR_URL = `${APP_BASE_URL}/payment/error`;
 
-const FieldRow = ({ name, type, description, required, example }) => (
-    <div className={`p-4 ${required ? 'border-l-4 border-l-secondary' : 'border-l-4 border-l-base-300'} hover:bg-base-200 transition-colors duration-150`}>
-        <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-lg text-primary">{name}</h3>
-            <div className={`badge ${required ? 'badge-secondary' : 'badge-ghost text-base-content'} badge-md font-mono`}>
-                {required ? 'REQUIRED' : 'Optional'}
-            </div>
-        </div>
-        <p className="text-sm text-base-content my-1">{description}</p>
-        <div className="flex flex-wrap gap-x-4 text-xs font-mono text-gray-500 mt-2">
-            <span>**Type:** <span className="text-info">{type}</span></span>
-            {example && <span>**Example:** <span className="text-accent">{example}</span></span>}
-        </div>
-    </div>
-);
-
-const Payment = () => {
-    return (
-        <div className="p-6 md:p-10 lg:p-16 bg-base-100 min-h-screen">
-            <header className="mb-10 text-center">
-                <h1 className="text-5xl font-extrabold text-primary mb-3">
-                    <DollarSign className="inline-block w-8 h-8 mr-3 text-secondary" />
-                    PaymentRequest API Interface
-                </h1>
-                <p className="text-xl text-base-content opacity-70">
-                    Formal definition for initiating a secure payment transaction.
-                </p>
-                <div className="divider"></div>
-            </header>
-
-            <main className="space-y-8 max-w-5xl mx-auto">
-                {PaymentRequestFieldData.map((section, index) => (
-                    <div key={index} className="card bg-base-300 shadow-xl border border-primary/20">
-                        <div className="card-body p-0">
-                            <h2 className="card-title p-5 text-2xl font-bold bg-primary text-primary-content rounded-t-xl">
-                                <section.icon className="w-6 h-6 mr-2" />
-                                {section.category}
-                            </h2>
-                            <div className="space-y-0 divide-y divide-base-content/20">
-                                {section.fields.map((field, fieldIndex) => (
-                                    <FieldRow key={fieldIndex} {...field} />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                <div className="alert alert-info shadow-lg mt-10">
-                    <div>
-                        <Lock className="w-6 h-6" />
-                        <span>
-                            **Security Note:** The `hashCheck` field is mandatory for securing the request payload. Refer to the official API documentation for the SHA512 hash generation algorithm.
-                        </span>
-                    </div>
-                </div>
-            </main>
-            
-            <footer className="text-center mt-12 pt-6 text-sm text-base-content/60 border-t border-base-300">
-                Interface developed based on Ozow PaymentRequest API specifications.
-            </footer>
-        </div>
-    );
+// SHA512 hash helper
+const generateHashCheck = (data, privateKey) => {
+  const fields = [
+    data.SiteCode,
+    data.CountryCode,
+    data.CurrencyCode,
+    data.Amount,
+    data.TransactionReference,
+    data.BankReference
+  ];
+  const hashString = fields.map(v => encodeURIComponent(String(v || ""))).join('&');
+  return sha512(hashString + '&' + privateKey);
 };
 
-export default Payment;
+// Input component
+const InputField = ({ label, name, icon: Icon, type = 'text', value, onChange, placeholder, isReadOnly = false }) => (
+  <div className="form-control space-y-1">
+    <label className="label flex items-center gap-2">
+      <Icon className="w-5 h-5 text-pink-500" />
+      <span className="label-text font-semibold text-gray-700">{label}</span>
+    </label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="input input-bordered w-full rounded-xl shadow-sm focus:ring-pink-500 focus:ring-2"
+      readOnly={isReadOnly}
+    />
+  </div>
+);
+
+const App = () => {
+  // Pre-fill with dummy data
+  const [formData, setFormData] = useState({
+    SiteCode: OZOW_MERCHANT_CODE,
+    CountryCode: "ZA",
+    CurrencyCode: "ZAR",
+    Amount: "100.00", // as string
+    TransactionReference: `TXN-${Date.now()}`,
+    BankReference: `REF-${Date.now().toString().slice(-6)}`,
+    Customer: "John Doe"
+  });
+
+  const [hashCheck, setHashCheck] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const hash = generateHashCheck(formData, OZOW_PRIVATE_KEY);
+    setHashCheck(hash);
+  }, [formData]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePayment = async () => {
+    if (!formData.Amount || !formData.Customer) {
+      alert("Enter a valid amount and customer name");
+      return;
+    }
+    setLoading(true);
+
+    // Ozow expects exact key names
+    const payload = {
+      ...formData,
+      HashCheck: hashCheck,
+      SuccessUrl: SUCCESS_URL,
+      CancelUrl: CANCEL_URL,
+      ErrorUrl: ERROR_URL
+    };
+
+    try {
+      const res = await fetch(OZOW_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.Url) {
+        window.location.href = data.Url;
+      } else {
+        console.error("Ozow API error:", data);
+        alert("Payment initiation failed. Check console for details.");
+      }
+    } catch (err) {
+      console.error("Payment request failed:", err);
+      alert("Payment request failed. Check console.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fields = [
+    { label: "Merchant Site Code", name: "SiteCode", icon: Fingerprint, isReadOnly: true },
+    { label: "Amount (ZAR)", name: "Amount", type: "text", icon: DollarSign },
+    { label: "Transaction Reference", name: "TransactionReference", icon: Code },
+    { label: "Bank Statement Reference", name: "BankReference", icon: Banknote },
+    { label: "Customer Name", name: "Customer", icon: User }
+  ];
+
+  return (
+    <motion.div className="min-h-screen p-6 bg-gradient-to-tr from-pink-50 to-purple-50 flex flex-col items-center">
+      <motion.div className="w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-6 sm:p-10 border-t-8 border-pink-500">
+        <header className="text-center mb-6">
+          <h1 className="text-4xl font-extrabold text-gray-800">
+            <span className="text-pink-600">ShuttleGo</span> Payment
+          </h1>
+          <p className="text-gray-500 mt-2 flex items-center justify-center gap-2">
+            <Zap className="w-5 h-5 text-orange-400 animate-pulse" /> Secure Instant EFT
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+            {fields.map(f => (
+              <motion.div key={f.name} whileHover={{ scale: 1.02 }}>
+                <InputField {...f} value={formData[f.name]} onChange={handleChange} />
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="lg:col-span-1 p-6 bg-purple-50 rounded-2xl shadow-inner space-y-5 flex flex-col justify-between">
+            <h2 className="text-2xl font-bold text-purple-700 mb-4 flex items-center gap-2">
+              <Scale className="w-6 h-6" /> Integrity
+            </h2>
+
+            <div className="flex justify-between items-center text-lg font-bold text-gray-800 border-b border-purple-200 pb-2">
+              <span>Amount:</span>
+              <span className="text-green-600">ZAR {formData.Amount}</span>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl text-center font-bold bg-green-100 text-green-700 flex items-center justify-center gap-2">
+              <Fingerprint className="w-5 h-5" /> Hash Ready
+            </div>
+
+            <motion.button
+              onClick={handlePayment}
+              disabled={loading}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className={`btn w-full text-lg font-bold py-3 rounded-xl shadow-xl transition-all duration-300 flex items-center justify-center gap-2
+                ${loading ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gradient-to-r from-pink-500 to-red-500 text-white hover:from-pink-600 hover:to-red-600'}`}
+            >
+              {loading ? "Redirecting..." : <><Send className="w-5 h-5" /> Proceed to Payment</>}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default App;
